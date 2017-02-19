@@ -14,7 +14,9 @@
  * limitations under the License.
  *
  */
+#include <stdint.h>
 #include <time.h>
+#include <cJSON.h>
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -39,11 +41,12 @@ typedef enum {
     alg_rs256,
     alg_rs384,
     alg_rs512
-} jwa_alg_t;
+} cjwt_alg_t;
 
 typedef struct {
-    jwa_alg_t alg;
-    char *kid
+    cjwt_alg_t 		alg;
+ 	unsigned char 	*key;
+	int 			key_len;
 
     /* Unsupported:
      *  jku
@@ -56,23 +59,25 @@ typedef struct {
      *  cty
      *  crit
      */
-} jose_t;
+} cjwt_header_t;
 
 typedef struct {
-    jose_t header;
+	cjwt_header_t header;
 
     char *iss;
     char *sub;
     char *aud;
-    struct timespec exp;
-    struct timespec nbf;
-    struct timespec iat;
-    char *jti;
 
-    cJSON *private_claims;
+	//struct timespec exp;
+    //struct timespec nbf;
+    //struct timespec iat;
+
+	char *jti;
+
+	cJSON *private_claims;
 
     void *internal_use_only;
-} cjwt_t
+} cjwt_t;
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -103,5 +108,12 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
                  const uint8_t *key, size_t key_len );
 
 /**
+ *  The function to free cjwt object 
+ *
+ *  @note Cleanup funtion for corresponding cjwt 
+ *
+ *  @param jwt 	[IN] the to be freed cjwt
+ *
+ *  @retval   0 successful
  */
 int cjwt_destroy( cjwt_t **jwt );

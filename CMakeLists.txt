@@ -16,21 +16,30 @@ cmake_minimum_required(VERSION 2.8.7)
 
 project(cjwt)
 include(ExternalProject)
-include(CTest)
+#include(CTest)
 
 add_definitions(-std=c99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall")
 
+set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/_install)
 set(PREFIX_DIR ${CMAKE_CURRENT_BINARY_DIR}/_prefix)
 set(INCLUDE_DIR ${INSTALL_DIR}/include)
 set(LIBRARY_DIR ${INSTALL_DIR}/lib${LIB_SUFFIX})
-include_directories(${INCLUDE_DIR}
+
+set(CJWT_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../include)
+set(CJWT_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/../libcjwt)
+set(CJWT_TEST_DIR ${CMAKE_CURRENT_BINARY_DIR}/../tests)
+
+include_directories(${CJWT_INCLUDE_DIR}
+					${CJWT_SRC_DIR}
+					${INCLUDE_DIR}
                     ${INCLUDE_DIR}/cjson
                     ${INCLUDE_DIR}/trower-base64)
 include_directories (SYSTEM /usr/include)
 link_directories ( ${LIBRARY_DIR} )
+
 
 enable_testing()
 
@@ -59,6 +68,6 @@ endif ()
 
 add_subdirectory(src)
 
-if (BUILD_TESTING)
+#if (BUILD_TESTING)
 	add_subdirectory(tests)
-endif (BUILD_TESTING)
+#endif (BUILD_TESTING)
