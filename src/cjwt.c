@@ -31,6 +31,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
+#define _DEBUG
 #ifdef _DEBUG
 
 #define cjwt_error(...)	printf(__VA_ARGS__)
@@ -296,20 +297,20 @@ static int cjwt_update_payload(cjwt_t *p_cjwt, char *p_decpl)
 	}
 	
 	//private_claims
-	j_val = cJSON_Duplicate(j_payload,1);
-	if( j_val )
+	cJSON* j_new = cJSON_Duplicate(j_payload,1);
+	if( j_new )
 	{
+	
+		cjwt_delete_public_claims(j_new);
 		
-		cjwt_delete_public_claims(j_val);
-		
-		cjwt_info("private claims count = %d\n",cJSON_GetArraySize(j_val));
-		if( cJSON_GetArraySize(j_val) )
+		cjwt_info("private claims count = %d\n",cJSON_GetArraySize(j_new));
+		if( cJSON_GetArraySize(j_new) )
 		{
-			cjwt_info("private claims  = %s\n",cJSON_Print(j_val));
+			cjwt_info("private claims  = %s\n",cJSON_Print(j_new));
 			if( p_cjwt->private_claims )
 				cJSON_Delete(p_cjwt->private_claims);
 			
-			p_cjwt->private_claims = j_val;
+			p_cjwt->private_claims = j_new;
 		}
 	}
 	//destroy cJSON object
