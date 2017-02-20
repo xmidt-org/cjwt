@@ -31,7 +31,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define _DEBUG
+
 #ifdef _DEBUG
 
 #define cjwt_error(...)	printf(__VA_ARGS__)
@@ -225,7 +225,7 @@ static int cjwt_verify_signature(cjwt_t *p_jwt, char *p_in, const char *p_sign)
 	size_t sz_p_sign = strlen(p_sign);
 	if (sz_encoded != sz_p_sign) {
 		cjwt_info ("Signature length mismatch: enc %d, signature %d\n", 
-			sz_encoded, sz_p_sign);
+			(int)sz_encoded, (int)sz_p_sign);
 		ret = -1;
 		goto err_mismatch;
 	}
@@ -356,7 +356,7 @@ static int cjwt_parse_payload(cjwt_t *p_cjwt, char *p_payload)
 	int sz_payload = strlen((char *)p_payload);
 	size_t pl_desize = b64_get_decoded_buffer_size(sz_payload);
 	
-	cjwt_info("Payload Size = %d , Decoded size = %d\n",sz_payload,pl_desize);
+	cjwt_info("Payload Size = %d , Decoded size = %d\n",sz_payload,(int)pl_desize);
 
 	uint8_t *decoded_pl = malloc(pl_desize);
 	if(!decoded_pl)
@@ -369,8 +369,8 @@ static int cjwt_parse_payload(cjwt_t *p_cjwt, char *p_payload)
 	out_size = b64_decode( (uint8_t *)p_payload, sz_payload, decoded_pl );
 
 	cjwt_info("----------------- payload ------------------- \n");
-	cjwt_info("Bytes = %d\n",out_size);
-	cjwt_info("Raw data  = %*s\n",out_size,decoded_pl);
+	cjwt_info("Bytes = %d\n",(int)out_size);
+	cjwt_info("Raw data  = %*s\n",(int)out_size,decoded_pl);
 	
 	if(!out_size)
 		return EINVAL;
@@ -386,7 +386,7 @@ static int cjwt_parse_header(cjwt_t *p_cjwt, char *p_head)
 	int sz_head = strlen((char *)p_head);
 	size_t head_desize = b64_get_decoded_buffer_size(sz_head);
 	
-	cjwt_info("Header Size = %d , Decoded size = %d\n",sz_head,head_desize);
+	cjwt_info("Header Size = %d , Decoded size = %d\n",sz_head,(int)head_desize);
 
 	uint8_t *decoded_head = malloc(head_desize);
 	if(!decoded_head)
@@ -400,8 +400,8 @@ static int cjwt_parse_header(cjwt_t *p_cjwt, char *p_head)
 	out_size = b64_decode( (uint8_t *)p_head, sz_head,decoded_head );
 
 	cjwt_info("----------------- header -------------------- \n");
-	cjwt_info("Bytes = %d\n",out_size);
-	cjwt_info("Raw data  = %*s\n",out_size,decoded_head);
+	cjwt_info("Bytes = %d\n",(int)out_size);
+	cjwt_info("Raw data  = %*s\n",(int)out_size,decoded_head);
 	cjwt_info("--------------------------------------------- \n");
 	
 	if(!out_size)
