@@ -105,6 +105,19 @@ static cjwt_alg_t cjwt_alg_str_to_enum(const char *alg_str)
 	return algo;
 }
  
+static void inline cjwt_delete_child_json(cJSON* j,const char* s)
+{
+	if( cJSON_HasObjectItem(j,s) ) cJSON_DeleteItemFromObject(j,s);
+}
+
+static void cjwt_delete_public_claims(cJSON* val)
+{
+	cjwt_delete_child_json(val,"iss");
+	cjwt_delete_child_json(val,"sub");
+	cjwt_delete_child_json(val,"aud");
+	cjwt_delete_child_json(val,"jti");
+}
+
 static int cjwt_base64uri_encode(char *str)
 {
 	 int len = strlen(str);
@@ -286,10 +299,8 @@ static int cjwt_update_payload(cjwt_t *p_cjwt, char *p_decpl)
 	j_val = cJSON_Duplicate(j_payload,1);
 	if( j_val )
 	{
-		cJSON_DeleteItemFromObject(j_val,"iss");
-		cJSON_DeleteItemFromObject(j_val,"sub");
-		cJSON_DeleteItemFromObject(j_val,"aud");
-		cJSON_DeleteItemFromObject(j_val,"jti");
+		
+		cjwt_delete_public_claims(j_val);
 		
 		cjwt_info("private claims count = %d\n",cJSON_GetArraySize(j_val));
 		if( cJSON_GetArraySize(j_val) )
