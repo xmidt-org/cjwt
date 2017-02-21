@@ -108,7 +108,7 @@ static cjwt_alg_t cjwt_alg_str_to_enum(const char *alg_str)
  
 static void inline cjwt_delete_child_json(cJSON* j,const char* s)
 {
-	if( cJSON_HasObjectItem(j,s) ) cJSON_DeleteItemFromObject(j,s);
+	if( j && cJSON_HasObjectItem(j,s) ) cJSON_DeleteItemFromObject(j,s);
 }
 
 static void cjwt_delete_public_claims(cJSON* val)
