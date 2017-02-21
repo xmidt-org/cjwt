@@ -126,7 +126,8 @@ static void cjwt_delete_public_claims( cJSON* val )
     cjwt_delete_child_json( val, "aud" );
     cjwt_delete_child_json( val, "jti" );
 }
-
+//TMP
+#if 0
 static int cjwt_base64uri_encode( char *str )
 {
     int len = strlen( str );
@@ -149,7 +150,7 @@ static int cjwt_base64uri_encode( char *str )
     //str[t] = '\0';
     return len;
 }
-
+#endif
 static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *alg,
                                const char *in, int *out_len )
 {
@@ -158,7 +159,7 @@ static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *a
     cjwt_info( "string for signing : %s \n", in );
     HMAC( alg, jwt->header.key, jwt->header.key_len,
           ( const unsigned char * )in, strlen( in ), res, &res_len );
-    unsigned char *resptr = malloc( res_len + 1);
+    unsigned char *resptr = (unsigned char *)malloc((res_len + 1) * sizeof(char));
 
     if( !resptr ) {
         return ENOMEM;
@@ -216,7 +217,9 @@ static int cjwt_verify_signature( cjwt_t *p_jwt, char *p_in, const char *p_sign 
     }
 
     b64_encode( ( uint8_t * )signed_out, sz_signed, signed_enc );
-    sz_encoded = cjwt_base64uri_encode( ( char* )signed_enc );
+    //TMP
+	
+	//sz_encoded = cjwt_base64uri_encode( ( char* )signed_enc );
     cjwt_info( "signed encoded : %s\n", signed_enc );
     cjwt_info( "expected token signature  %s\n", p_sign );
     size_t sz_p_sign = strlen( p_sign );
