@@ -151,6 +151,8 @@ static int cjwt_base64uri_encode( char *str )
     return len;
 }
 #endif
+//TMP
+#if 0
 static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *alg,
                                const char *in, int *out_len )
 {
@@ -189,6 +191,7 @@ static int cjwt_sign( cjwt_t *cjwt, unsigned char **out, const char *in, int *ou
 
     return -1;
 }
+
 
 static int cjwt_verify_signature( cjwt_t *p_jwt, char *p_in, const char *p_sign )
 {
@@ -240,6 +243,7 @@ err_encode:
 end:
     return ret;
 }
+#endif
 
 static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
 {
@@ -555,7 +559,8 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
         goto invalid;
     }
 
-    enc_token[strlen( enc_token )] = '.';
+  /* TMP
+  enc_token[strlen( enc_token )] = '.';
     //verify
     ret = cjwt_verify_signature( out, enc_token, signature );
 
@@ -563,7 +568,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
         cjwt_error( "Signature authentication failed\n" );
         goto invalid;
     }
-
+*/
     cjwt_info( "Signature authentication passed\n" );
 invalid:
 
