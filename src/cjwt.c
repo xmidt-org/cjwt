@@ -382,7 +382,10 @@ static int cjwt_parse_payload(cjwt_t *p_cjwt, char *p_payload)
 	if(!out_size)
 		return EINVAL;
 	
-	return cjwt_update_payload(p_cjwt, (char*)decoded_pl );
+	int ret = cjwt_update_payload(p_cjwt, (char*)decoded_pl );
+	free(decoded_pl);
+	
+	return ret;
 }
 
 static int cjwt_parse_header(cjwt_t *p_cjwt, char *p_head)
@@ -414,7 +417,11 @@ static int cjwt_parse_header(cjwt_t *p_cjwt, char *p_head)
 	if(!out_size)
 		return EINVAL;
 	
-	return cjwt_update_header(p_cjwt, (char*)decoded_head);
+	int ret = cjwt_update_header(p_cjwt, (char*)decoded_head);
+	
+	free(decoded_head);
+	
+	return ret;
 }
 
 static int cjwt_update_key(cjwt_t *p_cjwt, const uint8_t *key, size_t key_len )
