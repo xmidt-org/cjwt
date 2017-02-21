@@ -130,10 +130,10 @@ static void cjwt_delete_public_claims( cJSON* val )
 static int cjwt_base64uri_encode( char *str )
 {
     int len = strlen( str );
-    int i, t;
+    int t;
 
-    for( i = t = 0; i < len; i++ ) {
-        switch( str[i] ) {
+    for( t = 0; t < len; t++ ) {
+        switch( str[t] ) {   
             case '+':
                 str[t] = '-';
                 break;
@@ -144,12 +144,10 @@ static int cjwt_base64uri_encode( char *str )
                 str[t] = '\0';
                 break;
         }
-
-        t++;
     }
 
-    str[t] = '\0';
-    return strlen( str );
+    //str[t] = '\0';
+    return len;
 }
 
 static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *alg,
