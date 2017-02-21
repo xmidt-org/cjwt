@@ -160,7 +160,7 @@ static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *a
     cjwt_info( "string for signing : %s \n", in );
     HMAC( alg, jwt->header.key, jwt->header.key_len,
           ( const unsigned char * )in, strlen( in ), res, &res_len );
-    unsigned char *resptr = malloc( res_len );
+    unsigned char *resptr = malloc( res_len + 1);
 
     if( !resptr ) {
         return ENOMEM;
@@ -262,6 +262,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
     if( j_val ) {
         if( p_cjwt->iss ) {
             free( p_cjwt->iss );
+			p_cjwt->iss = NULL;
         }
 
         p_cjwt->iss = malloc( strlen( j_val->valuestring ) );
@@ -274,6 +275,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
     if( j_val ) {
         if( p_cjwt->sub ) {
             free( p_cjwt->sub );
+			p_cjwt->sub = NULL;
         }
 
         p_cjwt->sub = malloc( strlen( j_val->valuestring ) );
@@ -286,6 +288,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
     if( j_val ) {
         if( p_cjwt->aud ) {
             free( p_cjwt->aud );
+			p_cjwt->aud = NULL;
         }
 
         p_cjwt->aud = malloc( strlen( j_val->valuestring ) );
@@ -298,6 +301,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
     if( j_val ) {
         if( p_cjwt->jti ) {
             free( p_cjwt->jti );
+			p_cjwt->jti = NULL;
         }
 
         p_cjwt->jti = malloc( strlen( j_val->valuestring ) );
