@@ -106,7 +106,8 @@ static cjwt_alg_t cjwt_alg_str_to_enum( const char *alg_str )
 
     return algo;
 }
-
+//TMP
+#if 0
 static void inline cjwt_delete_child_json( cJSON* j, const char* s )
 {
     //cJSON* j_tmp = NULL;
@@ -126,8 +127,7 @@ static void cjwt_delete_public_claims( cJSON* val )
     cjwt_delete_child_json( val, "aud" );
     cjwt_delete_child_json( val, "jti" );
 }
-//TMP
-#if 0
+
 static int cjwt_base64uri_encode( char *str )
 {
     int len = strlen( str );
@@ -243,7 +243,7 @@ err_encode:
 end:
     return ret;
 }
-#endif
+
 
 static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
 {
@@ -335,7 +335,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
     cJSON_Delete( j_payload );
     return 0;
 }
-
+#endif
 static int cjwt_update_header( cjwt_t *p_cjwt, char *p_dechead )
 {
     if( !p_cjwt || !p_dechead ) {
@@ -395,10 +395,13 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     if( !out_size ) {
         return EINVAL;
     }
-
+//TMP
+/*
     int ret = cjwt_update_payload( p_cjwt, ( char* )decoded_pl );
     free( decoded_pl );
-    return ret;
+	return ret;
+*/
+    return 0;
 }
 
 static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
