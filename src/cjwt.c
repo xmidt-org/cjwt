@@ -378,7 +378,7 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     int sz_payload = strlen( ( char * )p_payload );
     size_t pl_desize = b64_get_decoded_buffer_size( sz_payload );
     cjwt_info( "Payload Size = %d , Decoded size = %d\n", sz_payload, ( int )pl_desize );
-    uint8_t *decoded_pl = malloc( pl_desize );
+    uint8_t *decoded_pl = malloc( pl_desize +1 );
 
     if( !decoded_pl ) {
         return ENOMEM;
@@ -401,6 +401,7 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     free( decoded_pl );
 	return ret;
 */
+	decoded_pl[out_size] = '\0';
 	cJSON *j_payload = cJSON_Parse( ( char* )decoded_pl );
 	cJSON_Delete(j_payload);
     return 0;
