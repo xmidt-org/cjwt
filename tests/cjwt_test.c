@@ -86,7 +86,7 @@ void cjwt_test_HS512()
 int main( int argc, char *argv[] )
 {
     cjwt_test_HS256();
-//   cjwt_test_HS384();
-//   cjwt_test_HS512();
+	cjwt_test_HS384();
+	cjwt_test_HS512();
     return 0;
 }

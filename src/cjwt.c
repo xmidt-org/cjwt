@@ -31,7 +31,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-//#define _DEBUG
+
 #ifdef _DEBUG
 
 #define cjwt_error(...) printf(__VA_ARGS__)
@@ -106,18 +106,12 @@ static cjwt_alg_t cjwt_alg_str_to_enum( const char *alg_str )
 
     return algo;
 }
-//TMP
-#if 0
+
 static void inline cjwt_delete_child_json( cJSON* j, const char* s )
 {
-    //cJSON* j_tmp = NULL;
     if( j && cJSON_HasObjectItem( j, s ) ) {
-        cJSON_DetachItemFromObject( j, s );
-        //cJSON_DetachItemFromObject(j,s);
-        //cJSON_Delete(j_tmp);
+        cJSON_DeleteItemFromObject(j,s);
     }
-
-    //cJSON_DeleteItemFromObject(j,s);
 }
 
 static void cjwt_delete_public_claims( cJSON* val )
@@ -150,9 +144,8 @@ static int cjwt_base64uri_encode( char *str )
     //str[t] = '\0';
     return len;
 }
-#endif
-//TMP
-#if 0
+
+
 static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *alg,
                                const char *in, int *out_len )
 {
@@ -161,7 +154,7 @@ static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *a
     cjwt_info( "string for signing : %s \n", in );
     HMAC( alg, jwt->header.key, jwt->header.key_len,
           ( const unsigned char * )in, strlen( in ), res, &res_len );
-    unsigned char *resptr = (unsigned char *)malloc((res_len + 1) * sizeof(char));
+    unsigned char *resptr = (unsigned char *)malloc(res_len + 1);
 
     if( !resptr ) {
         return ENOMEM;
@@ -212,7 +205,7 @@ static int cjwt_verify_signature( cjwt_t *p_jwt, char *p_in, const char *p_sign 
     }
 
     size_t sz_encoded = b64_get_encoded_buffer_size( sz_signed );
-    uint8_t *signed_enc = malloc( sz_encoded );
+    uint8_t *signed_enc = malloc( sz_encoded +1 );
 
     if( !signed_enc ) {
         ret = ENOMEM;
@@ -220,9 +213,9 @@ static int cjwt_verify_signature( cjwt_t *p_jwt, char *p_in, const char *p_sign 
     }
 
     b64_encode( ( uint8_t * )signed_out, sz_signed, signed_enc );
-    //TMP
+    
 	
-	//sz_encoded = cjwt_base64uri_encode( ( char* )signed_enc );
+	sz_encoded = cjwt_base64uri_encode( ( char* )signed_enc );
     cjwt_info( "signed encoded : %s\n", signed_enc );
     cjwt_info( "expected token signature  %s\n", p_sign );
     size_t sz_p_sign = strlen( p_sign );
@@ -335,7 +328,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
     cJSON_Delete( j_payload );
     return 0;
 }
-#endif
+
 static int cjwt_update_header( cjwt_t *p_cjwt, char *p_dechead )
 {
     if( !p_cjwt || !p_dechead ) {
@@ -369,91 +362,26 @@ static int cjwt_update_header( cjwt_t *p_cjwt, char *p_dechead )
     return 0;
 }
 
-/*
-** decodeblock
-**
-** decode 4 '6-bit' characters into 3 8-bit binary bytes
-*/
-static void cjwt_decodeblock( const uint8_t *in, uint8_t *out )
-{   
-    out[ 0 ] = (uint8_t ) (in[0] << 2 | in[1] >> 4);
-    out[ 1 ] = (uint8_t ) (in[1] << 4 | in[2] >> 2);
-    out[ 2 ] = (uint8_t ) (((in[2] << 6) & 0xc0) | in[3]);
-}
-
-static size_t cjwt_decode_core( const uint8_t *table, uint8_t start,
-                           const uint8_t *input, const size_t input_size, uint8_t *output )
-{
-
-    uint8_t in[4], v;
-    uint8_t *out = output;
-    int i, len;
-    size_t count = 0;
-
-    while( count < input_size ) {
-        for( len = 0, i = 0; (i < 4) && (count < input_size); i++ ) {
-            v = 0;
-            while(    (count < input_size)
-                   && (v == 0) ) {
-                v = input[count++];
-                v = (uint8_t) ((v < start || v > 122) ? 0 : table[ v - start ]);
-                if( v ) {
-                    v = (uint8_t) ((v == '$') ? 0 : v - 61);
-                }
-            }
-            if( count < input_size || v != 0) {
-                len++;
-                if( v ) {
-                    in[ i ] = (uint8_t) (v - 1);
-                }
-            } else {
-                in[i] = 0;
-            }
-        }
-        if( len ) {
-            cjwt_decodeblock( in, out );
-            out += len - 1;
-        }
-    }
-    return (out - output);
-}
-
-size_t cjwt_b64_decode( const uint8_t *input, const size_t input_size, uint8_t *output )
-{
-    /*
-    ** Translation Table to decode (created by author)
-    */
-    static const uint8_t cd64[]="|$$$}rstuvwxyz{$$$$$$$>?@ABCDEFGHIJKLMNOPQRSTUVW$$$$$$XYZ[\\]^_`abcdefghijklmnopq";
-
-    return cjwt_decode_core( cd64, 43, input, input_size, output );
-}
-
 static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
 {
     if( !p_cjwt || !p_payload ) {
         return EINVAL;
     }
-	
-	/*
-	Payload Size = 54 , Decoded size = 39
------------------ payload ------------------- 
-Bytes = 40
-	*/
 
     int sz_payload = strlen( ( char * )p_payload );
     size_t pl_desize = b64_get_decoded_buffer_size( sz_payload );
     cjwt_info( "Payload Size = %d , Decoded size = %d\n", sz_payload, ( int )pl_desize );
-    uint8_t *decoded_pl = malloc( pl_desize +1 +1);
+    uint8_t *decoded_pl = malloc( pl_desize + 2); //b64_get_decoded_buffer_size returning incorrectly, (size-1)
+												  // allocating one byte more as workaround
 
     if( !decoded_pl ) {
         return ENOMEM;
     }
 
-    memset( decoded_pl, 0, pl_desize );
+    memset( decoded_pl, 0, (pl_desize + 2 ));
     size_t out_size = 0;
-    //decode body
-    //out_size = b64_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
-	out_size = cjwt_b64_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
+    //decode payload
+    out_size = b64_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
     cjwt_info( "----------------- payload ------------------- \n" );
     cjwt_info( "Bytes = %d\n", ( int )out_size );
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_pl );
@@ -461,19 +389,12 @@ Bytes = 40
     if( !out_size ) {
         return EINVAL;
     }
-//TMP
-/*
+
+	decoded_pl[out_size] = '\0';
+	
     int ret = cjwt_update_payload( p_cjwt, ( char* )decoded_pl );
     free( decoded_pl );
 	return ret;
-*/
-	decoded_pl[out_size] = '\0';
-	
-	
-	
-	cJSON *j_payload = cJSON_Parse( ( char* )decoded_pl );
-	cJSON_Delete(j_payload);
-    return 0;
 }
 
 static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
@@ -634,8 +555,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
         goto invalid;
     }
 
-  /* TMP
-  enc_token[strlen( enc_token )] = '.';
+	enc_token[strlen( enc_token )] = '.';
     //verify
     ret = cjwt_verify_signature( out, enc_token, signature );
 
@@ -643,7 +563,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
         cjwt_error( "Signature authentication failed\n" );
         goto invalid;
     }
-*/
+
     cjwt_info( "Signature authentication passed\n" );
 invalid:
 
