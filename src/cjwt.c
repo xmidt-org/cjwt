@@ -433,11 +433,17 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     if( !p_cjwt || !p_payload ) {
         return EINVAL;
     }
+	
+	/*
+	Payload Size = 54 , Decoded size = 39
+----------------- payload ------------------- 
+Bytes = 40
+	*/
 
     int sz_payload = strlen( ( char * )p_payload );
     size_t pl_desize = b64_get_decoded_buffer_size( sz_payload );
     cjwt_info( "Payload Size = %d , Decoded size = %d\n", sz_payload, ( int )pl_desize );
-    uint8_t *decoded_pl = malloc( pl_desize +1 );
+    uint8_t *decoded_pl = malloc( pl_desize +1 +1);
 
     if( !decoded_pl ) {
         return ENOMEM;
