@@ -402,7 +402,11 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
 	return ret;
 */
 	decoded_pl[out_size] = '\0';
-	cJSON *j_payload = cJSON_Parse( ( char* )decoded_pl );
+	
+	char *tmp_decoded_pl = malloc( pl_desize +1 );
+	strcpy(tmp_decoded_pl, (char*)decoded_pl);
+	
+	cJSON *j_payload = cJSON_Parse( ( char* )tmp_decoded_pl );
 	cJSON_Delete(j_payload);
     return 0;
 }
