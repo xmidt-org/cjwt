@@ -31,7 +31,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-
+//#define _DEBUG
 #ifdef _DEBUG
 
 #define cjwt_error(...) printf(__VA_ARGS__)
@@ -369,6 +369,65 @@ static int cjwt_update_header( cjwt_t *p_cjwt, char *p_dechead )
     return 0;
 }
 
+/*
+** decodeblock
+**
+** decode 4 '6-bit' characters into 3 8-bit binary bytes
+*/
+static void cjwt_decodeblock( const uint8_t *in, uint8_t *out )
+{   
+    out[ 0 ] = (uint8_t ) (in[0] << 2 | in[1] >> 4);
+    out[ 1 ] = (uint8_t ) (in[1] << 4 | in[2] >> 2);
+    out[ 2 ] = (uint8_t ) (((in[2] << 6) & 0xc0) | in[3]);
+}
+
+static size_t cjwt_decode_core( const uint8_t *table, uint8_t start,
+                           const uint8_t *input, const size_t input_size, uint8_t *output )
+{
+
+    uint8_t in[4], v;
+    uint8_t *out = output;
+    int i, len;
+    size_t count = 0;
+
+    while( count < input_size ) {
+        for( len = 0, i = 0; (i < 4) && (count < input_size); i++ ) {
+            v = 0;
+            while(    (count < input_size)
+                   && (v == 0) ) {
+                v = input[count++];
+                v = (uint8_t) ((v < start || v > 122) ? 0 : table[ v - start ]);
+                if( v ) {
+                    v = (uint8_t) ((v == '$') ? 0 : v - 61);
+                }
+            }
+            if( count < input_size || v != 0) {
+                len++;
+                if( v ) {
+                    in[ i ] = (uint8_t) (v - 1);
+                }
+            } else {
+                in[i] = 0;
+            }
+        }
+        if( len ) {
+            cjwt_decodeblock( in, out );
+            out += len - 1;
+        }
+    }
+    return (out - output);
+}
+
+size_t cjwt_b64_decode( const uint8_t *input, const size_t input_size, uint8_t *output )
+{
+    /*
+    ** Translation Table to decode (created by author)
+    */
+    static const uint8_t cd64[]="|$$$}rstuvwxyz{$$$$$$$>?@ABCDEFGHIJKLMNOPQRSTUVW$$$$$$XYZ[\\]^_`abcdefghijklmnopq";
+
+    return cjwt_decode_core( cd64, 43, input, input_size, output );
+}
+
 static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
 {
     if( !p_cjwt || !p_payload ) {
@@ -387,7 +446,8 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     memset( decoded_pl, 0, pl_desize );
     size_t out_size = 0;
     //decode body
-    out_size = b64_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
+    //out_size = b64_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
+	out_size = cjwt_b64_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
     cjwt_info( "----------------- payload ------------------- \n" );
     cjwt_info( "Bytes = %d\n", ( int )out_size );
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_pl );
@@ -403,10 +463,9 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
 */
 	decoded_pl[out_size] = '\0';
 	
-	char *tmp_decoded_pl = malloc( pl_desize +1 );
-	strcpy(tmp_decoded_pl, (char*)decoded_pl);
 	
-	cJSON *j_payload = cJSON_Parse( ( char* )tmp_decoded_pl );
+	
+	cJSON *j_payload = cJSON_Parse( ( char* )decoded_pl );
 	cJSON_Delete(j_payload);
     return 0;
 }
