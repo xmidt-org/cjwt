@@ -154,14 +154,13 @@ static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *a
     cjwt_info( "string for signing : %s \n", in );
     HMAC( alg, jwt->header.key, jwt->header.key_len,
           ( const unsigned char * )in, strlen( in ), res, &res_len );
-    unsigned char *resptr = (unsigned char *)malloc(res_len + 1);
+    unsigned char *resptr = (unsigned char *)malloc(res_len);
 
     if( !resptr ) {
         return ENOMEM;
     }
 
     memcpy( resptr, res, res_len );
-    resptr[res_len] = '\0';
     *out = resptr;
     *out_len = res_len;
     return 0;
@@ -205,20 +204,24 @@ static int cjwt_verify_signature( cjwt_t *p_jwt, char *p_in, const char *p_sign 
     }
 
     size_t sz_encoded = b64_get_encoded_buffer_size( sz_signed );
-    uint8_t *signed_enc = malloc( sz_encoded +1 );
+    uint8_t *signed_enc = malloc( sz_encoded +1);
 
     if( !signed_enc ) {
         ret = ENOMEM;
         goto err_encode;
     }
-
+	
+	memset( signed_enc, 0, (sz_encoded +1 ));
+ 
     b64_encode( ( uint8_t * )signed_out, sz_signed, signed_enc );
     
-	
 	sz_encoded = cjwt_base64uri_encode( ( char* )signed_enc );
-    cjwt_info( "signed encoded : %s\n", signed_enc );
+	
+	cjwt_info( "signed encoded : %s\n", signed_enc );
     cjwt_info( "expected token signature  %s\n", p_sign );
-    size_t sz_p_sign = strlen( p_sign );
+    
+	size_t sz_p_sign = strlen( p_sign );
+	sz_encoded = strlen(( char* )signed_enc );
 
     if( sz_encoded != sz_p_sign ) {
         cjwt_info( "Signature length mismatch: enc %d, signature %d\n",
@@ -369,19 +372,18 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     }
 
     int sz_payload = strlen( ( char * )p_payload );
-    size_t pl_desize = b64_get_decoded_buffer_size( sz_payload );
+    size_t pl_desize = b64url_get_decoded_buffer_size( sz_payload );
     cjwt_info( "Payload Size = %d , Decoded size = %d\n", sz_payload, ( int )pl_desize );
-    uint8_t *decoded_pl = malloc( pl_desize + 2); //b64_get_decoded_buffer_size returning incorrectly, (size-1)
-												  // allocating one byte more as workaround
+    uint8_t *decoded_pl = malloc( pl_desize + 1); 
 
     if( !decoded_pl ) {
         return ENOMEM;
     }
 
-    memset( decoded_pl, 0, (pl_desize + 2 ));
+    memset( decoded_pl, 0, (pl_desize + 1 ));
     size_t out_size = 0;
     //decode payload
-    out_size = b64_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
+    out_size = b64url_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
     cjwt_info( "----------------- payload ------------------- \n" );
     cjwt_info( "Bytes = %d\n", ( int )out_size );
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_pl );
@@ -404,18 +406,18 @@ static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
     }
 
     int sz_head = strlen( ( char * )p_head );
-    size_t head_desize = b64_get_decoded_buffer_size( sz_head );
+    size_t head_desize = b64url_get_decoded_buffer_size( sz_head );
     cjwt_info( "Header Size = %d , Decoded size = %d\n", sz_head, ( int )head_desize );
-    uint8_t *decoded_head = malloc( head_desize );
+    uint8_t *decoded_head = malloc( head_desize+1);
 
     if( !decoded_head ) {
         return ENOMEM;
     }
 
-    memset( decoded_head, 0, head_desize );
+    memset( decoded_head, 0, head_desize+1 );
     size_t out_size = 0;
     //decode header
-    out_size = b64_decode( ( uint8_t * )p_head, sz_head, decoded_head );
+    out_size = b64url_decode( ( uint8_t * )p_head, sz_head, decoded_head );
     cjwt_info( "----------------- header -------------------- \n" );
     cjwt_info( "Bytes = %d\n", ( int )out_size );
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_head );
@@ -425,6 +427,7 @@ static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
         return EINVAL;
     }
 
+	decoded_head[out_size] = '\0';
     int ret = cjwt_update_header( p_cjwt, ( char* )decoded_head );
     free( decoded_head );
     return ret;
@@ -541,7 +544,6 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
 
     //parse header
     ret = cjwt_parse_header( out, enc_token );
-
     if( ret ) {
         cjwt_error( "Invalid header\n" );
         goto invalid;
@@ -549,7 +551,6 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
 
     //parse payload
     ret = cjwt_parse_payload( out, payload );
-
     if( ret ) {
         cjwt_error( "Invalid payload\n" );
         goto invalid;
@@ -558,7 +559,6 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
 	enc_token[strlen( enc_token )] = '.';
     //verify
     ret = cjwt_verify_signature( out, enc_token, signature );
-
     if( ret ) {
         cjwt_error( "Signature authentication failed\n" );
         goto invalid;

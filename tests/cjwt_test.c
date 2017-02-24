@@ -31,7 +31,7 @@ void cjwt_test_HS256()
     cjwt_t *jwt = NULL;
     int result = cjwt_decode( token, 0, &jwt,
                               key256, key_len );
-    result = cjwt_destroy( &jwt );
+    result = result || ( cjwt_destroy( &jwt ) );
     printf( "\n------------------------------------------------------\n" );
     printf( "Result : %s\n", result ? "Failed" : "Passed" );
     printf( "======================================================\n\n" );
@@ -54,7 +54,7 @@ void cjwt_test_HS384()
     cjwt_t *jwt  = NULL;
     int result = cjwt_decode( token, 0, &jwt,
                               key384, key_len );
-    result = cjwt_destroy( &jwt );
+    result = result || ( cjwt_destroy( &jwt ) );
     printf( "\n------------------------------------------------------\n" );
     printf( "Result : %s\n", result ? "Failed" : "Passed" );
     printf( "======================================================\n\n" );
@@ -76,7 +76,7 @@ void cjwt_test_HS512()
     cjwt_t *jwt = NULL;
     int result = cjwt_decode( token, 0, &jwt,
                               key512, key_len );
-    result = cjwt_destroy( &jwt );
+    result = result || ( cjwt_destroy( &jwt ) );
     printf( "\n------------------------------------------------------\n" );
     printf( "Result : %s\n", result ? "Failed" : "Passed" );
     printf( "======================================================\n\n" );
@@ -86,7 +86,7 @@ void cjwt_test_HS512()
 int main( int argc, char *argv[] )
 {
     cjwt_test_HS256();
-	cjwt_test_HS384();
-	cjwt_test_HS512();
+    cjwt_test_HS384();
+    cjwt_test_HS512();
     return 0;
 }
