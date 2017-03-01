@@ -24,11 +24,12 @@
 #define OPT_ALLOW_ALG_NONE  (1<<0)
 #define OPT_ALLOW_ANY_TIME  (1<<1)
 
+
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
 typedef enum {
-    alg_none,
+    alg_none = 0,
     alg_es256,
     alg_es384,
     alg_es512,
@@ -68,9 +69,9 @@ typedef struct {
     char *sub;
     char *aud;
 
-    //struct timespec exp;
-    //struct timespec nbf;
-    //struct timespec iat;
+    struct timespec exp;
+    struct timespec nbf;
+    struct timespec iat;
 
     char *jti;
 

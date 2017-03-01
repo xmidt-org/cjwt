@@ -19,7 +19,7 @@ include(ExternalProject)
 #include(CTest)
 
 add_definitions(-std=c99)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -D_POSIX_C_SOURCE=199309L")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall")
 
 set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
