@@ -5,20 +5,21 @@ env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
-   #- secure: ""
+   - secure: "ktEYo2OHcNnQwvjyRx/wl3uE39lyVwP+bRKlZ5hatbSTi/fzZyZlrWVrgsDtJ5ZO++E5P4AOgEDVNGQ8l4rukp1mvgDVFvoOXgEt5p/H+KqXrUsiniXPXncZIdUEVhAs/xrLNlNDM66CDUW0vUNqPUNJV/kWU56pdwx/bH9yzsHBhCWFG/LB+BEj+Xas+++6mA6Hg/awwQc7rYoYEDOu7+r0agwby0fjw+O5epx9SpX/IN2XGBpDZKvsaJrhXaNZvASq6RhfQq87MeLblDz74SLaazZvPigELEqE0g9cYQe2MSoM94FW5FU87PAF/OamW2CdmP7eXN5xEWLUMBB6AiKmTRn9/8jYbLSf2oSflxHbbesYgZSi1WkGYnyj11YwH+3JGwNKetqQ8gQAhda52yaBVhnBnA9lT/D6QkS/pex2K3vfsNpE40d/2JDhuJDCcGsiUo4JpNeCQ+rLadk6bcs5E0zoGabcY3qNDSchTMyvo103ehVsFpG3IwEPCxvF2PU5h55M+g2419wpBZb4IJJwocx72rmhdnP2pTzJkrcq4y8wX5+LnWlA+D1vGw0eaVOgzGGDXHqJ5+xd31Q+ZQq93ny50MXiJv2LDEkU2C4r8cfKoh/Oq6eQcd9ZyjVNGHBdZ3StsO718vV6Ae05RQVRRHe+7q0yabErC8NWjGY="
 
-#addons:
-#  coverity_scan:
-#    project:
-#      name: "Comcast/cjwt"
-#      description: "A C JWT Implementation"
-#    notification_email: weston_schmidt@alumni.purdue.edu
-#    build_command_prepend: "mkdir coverity_build && cd coverity_build && cmake .."
-#    build_command:   "make"
-#    branch_pattern: master
+addons:
+  coverity_scan:
+    project:
+      name: "Comcast/cjwt"
+      description: "A C JWT Implementation"
+    notification_email: weston_schmidt@alumni.purdue.edu
+    build_command_prepend: "mkdir coverity_build && cd coverity_build && cmake .."
+    build_command:   "make"
+    branch_pattern: master
 
 before_install:
     - sudo pip install codecov
+      - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
 
 install:
     - sudo apt-get update -qq
