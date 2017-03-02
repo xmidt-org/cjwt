@@ -18,6 +18,12 @@ project(cjwt)
 include(ExternalProject)
 #include(CTest)
 
+
+# Option
+option(ENABLE_TESTS 
+  "Enable the compilation and running of unit tests" ON)
+
+
 add_definitions(-std=c99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -D_POSIX_C_SOURCE=199309L")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall")
@@ -41,7 +47,7 @@ include_directories (SYSTEM /usr/include)
 link_directories ( ${LIBRARY_DIR} )
 
 
-enable_testing()
+
 
 if (NOT BUILD_YOCTO)
 
@@ -68,6 +74,8 @@ endif ()
 
 add_subdirectory(src)
 
-#if (BUILD_TESTING)
+# Unit tests
+if (ENABLE_TESTS)
+	enable_testing()
 	add_subdirectory(tests)
-#endif (BUILD_TESTING)
+endif (ENABLE_TESTS)

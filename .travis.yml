@@ -22,7 +22,7 @@ before_install:
 
 install:
     - sudo apt-get update -qq
-    - sudo apt-get install -y -qq libcunit1 libcunit1-dev lcov
+    - sudo apt-get install -y -qq libcheck lcov
 
 script:
     - mkdir build
