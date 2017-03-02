@@ -22,7 +22,7 @@ before_install:
 
 install:
     - sudo apt-get update -qq
-    - sudo apt-get install -y -qq libcheck lcov
+    - sudo apt-get install -y -qq check lcov
 
 script:
     - mkdir build
