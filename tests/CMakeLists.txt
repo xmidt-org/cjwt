@@ -23,5 +23,6 @@ target_link_libraries (cjwt_test ${BUILD_DIR}/src/libcjwt.a
 						 -lm
 						 -ltrower-base64
 						 -lcjson
+						 -lcheck
 					  )
-						
+			
