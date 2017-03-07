@@ -226,7 +226,7 @@ rsa_end:
 
 static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64 )
 {
-    int ret, sz_sigb64 = 0;
+    int ret = EINVAL, sz_sigb64 = 0;
     RSA *rsa = NULL;
     size_t enc_len = 0, sig_desize = 0;
     uint8_t *decoded_sig = NULL;
@@ -252,6 +252,9 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
 
     if( !decoded_sig ) {
         cjwt_error( "memory allocation failed\n" );
+		//free rsa
+		RSA_free( rsa );
+		cjwt_rsa_error();
         return ENOMEM;
     }
 
@@ -263,7 +266,7 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
 
     if( !sig_desize ) {
         cjwt_error( "b64url_decode failed\n" );
-        return EINVAL;
+		goto end;
     }
 
     decoded_sig[sig_desize] = '\0';
@@ -291,9 +294,10 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
             break;
         default:
             cjwt_error( "invalid rsa algorithm\n" );
-            return EINVAL;
+			ret = EINVAL;
+			break;
     }
-
+end:
     RSA_free( rsa );
     free( decoded_sig );
 
@@ -519,66 +523,77 @@ static int cjwt_update_header( cjwt_t *p_cjwt, char *p_dechead )
 
 static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
 {
+    int ret,sz_payload; 
+    size_t pl_desize; 
+    size_t out_size = 0;
+    uint8_t *decoded_pl; 
     if( !p_cjwt || !p_payload ) {
         return EINVAL;
     }
 
-    int sz_payload = strlen( ( char * )p_payload );
-    size_t pl_desize = b64url_get_decoded_buffer_size( sz_payload );
+    sz_payload = strlen( ( char * )p_payload );
+    pl_desize = b64url_get_decoded_buffer_size( sz_payload );
     cjwt_info( "----------------- payload ------------------- \n" );
     cjwt_info( "Payload Size = %d , Decoded size = %d\n", sz_payload, ( int )pl_desize );
-    uint8_t *decoded_pl = malloc( pl_desize + 1 );
+    decoded_pl = malloc( pl_desize + 1 );
 
     if( !decoded_pl ) {
         return ENOMEM;
     }
 
     memset( decoded_pl, 0, ( pl_desize + 1 ) );
-    size_t out_size = 0;
     //decode payload
     out_size = b64url_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
     cjwt_info( "Bytes = %d\n", ( int )out_size );
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_pl );
 
     if( !out_size ) {
-        return EINVAL;
+        ret = EINVAL;
+		goto end;
     }
 
     decoded_pl[out_size] = '\0';
-    int ret = cjwt_update_payload( p_cjwt, ( char* )decoded_pl );
+    ret = cjwt_update_payload( p_cjwt, ( char* )decoded_pl );
+end:
     free( decoded_pl );
     return ret;
 }
 
 static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
-{
+{   	int sz_head, ret = 0;
+	size_t head_desize;
+	uint8_t *decoded_head;
+	size_t out_size = 0;
+	 
     if( !p_cjwt || !p_head ) {
         return EINVAL;
     }
 
-    int sz_head = strlen( ( char * )p_head );
-    size_t head_desize = b64url_get_decoded_buffer_size( sz_head );
+    sz_head = strlen( ( char * )p_head );
+    head_desize = b64url_get_decoded_buffer_size( sz_head );
     cjwt_info( "----------------- header -------------------- \n" );
     cjwt_info( "Header Size = %d , Decoded size = %d\n", sz_head, ( int )head_desize );
-    uint8_t *decoded_head = malloc( head_desize + 1 );
+    decoded_head = malloc( head_desize + 1 );
 
     if( !decoded_head ) {
         return ENOMEM;
     }
 
     memset( decoded_head, 0, head_desize + 1 );
-    size_t out_size = 0;
+    
     //decode header
     out_size = b64url_decode( ( uint8_t * )p_head, sz_head, decoded_head );
     cjwt_info( "Bytes = %d\n", ( int )out_size );
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_head );
 
     if( !out_size ) {
-        return EINVAL;
+        ret = EINVAL;
+		goto end;
     }
 
     decoded_head[out_size] = '\0';
-    int ret = cjwt_update_header( p_cjwt, ( char* )decoded_head );
+    ret = cjwt_update_header( p_cjwt, ( char* )decoded_head );
+end:
     free( decoded_head );
     return ret;
 }

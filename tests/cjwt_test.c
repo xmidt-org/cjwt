@@ -106,15 +106,22 @@ test_case_t test_list[] = {
 
 int open_input_file( const char *fname )
 {
-    char cwd[1024];
+	int len = 1024;
+    char cwd[len];
 
     if( getcwd( cwd, sizeof( cwd ) ) != NULL ) {
         strcat( cwd, "/../tests/inputs/" );
     } else {
         perror( "getcwd() error" );
+		return -1;
     }
 
-    strcat( cwd, fname );
+	if( (fname==NULL) || ((strlen(cwd) + strlen(fname))>len))
+	{
+		perror( "file name too long error" );
+		return -1;
+    }	
+	strcat( cwd, fname );	
     int fd = open( cwd, O_RDONLY );
 
     if( fd < 0 ) {
@@ -187,12 +194,12 @@ START_TEST( test_cjwt_decode )
         printf( "\n--- Test %s expected bad\n", decode_test_name );
     }
 
+	memset(jwt_buf,65535,0);
     printf( "--- Input jwt : %s \n", jwt_fname );
     jwt_bytes = read_file( jwt_fname, jwt_buf, sizeof( jwt_buf ) );
 
     if( jwt_bytes > 0 ) {
-        jwt_buf[jwt_bytes] = '\0';
-        result = cjwt_decode( jwt_buf, 0, &jwt, ( const uint8_t * )key_str, key_len );
+		result = cjwt_decode( jwt_buf, 0, &jwt, ( const uint8_t * )key_str, key_len );
     } else {
         result = jwt_bytes;
     }
