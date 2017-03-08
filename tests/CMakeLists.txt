@@ -12,21 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_test(NAME libcjwt_test COMMAND cjwt_test)
+add_test(NAME Simple COMMAND simple)
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-error=missing-field-initializers -W -g -fprofile-arcs -ftest-coverage -O0")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -W  -g -fprofile-arcs -ftest-coverage -O0")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage -O0")
 
-add_executable(cjwt_test cjwt_test.c ../src/cjwt.c)
-set_property(TARGET cjwt_test PROPERTY C_STANDARD 99)
+add_executable(simple cjwt_test.c ../src/cjwt.c)
 
-target_link_libraries (cjwt_test gcov
-						 -lssl
-						 -lcrypto
-						 -lm
-						 -ltrower-base64
-						 -lcjson
-						 -lcheck
-					  )
+target_link_libraries (simple -lssl -lcrypto -ltrower-base64 -lcjson -lcheck -lm)
+target_link_libraries (simple gcov)
 			
