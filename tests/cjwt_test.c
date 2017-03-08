@@ -26,7 +26,7 @@
 #include <check.h>
 
 #include <cJSON.h>
-#include <cjwt.h>
+#include "../src/cjwt.h"
 
 typedef struct {
     bool expected;
