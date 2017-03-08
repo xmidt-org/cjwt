@@ -15,6 +15,11 @@ cmake_minimum_required(VERSION 2.8.7)
 
 set(PROJ_CJWT cjwt)
 
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-error=missing-field-initializers -W")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -W")
+set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+
+
 file(GLOB HEADERS cjwt.h)
 set(SOURCES cjwt.c)
 

@@ -16,13 +16,7 @@ cmake_minimum_required(VERSION 2.8.7)
 
 project(cjwt)
 include(ExternalProject)
-#include(CTest)
-
-
-# Option
-option(ENABLE_TESTS 
-  "Enable the compilation and running of unit tests" ON)
-
+include(CTest)
 
 add_definitions(-std=c99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -D_POSIX_C_SOURCE=199309L")
@@ -75,7 +69,7 @@ endif ()
 add_subdirectory(src)
 
 # Unit tests
-if (ENABLE_TESTS)
+if (BUILD_TESTING)
 	enable_testing()
 	add_subdirectory(tests)
-endif (ENABLE_TESTS)
+endif (BUILD_TESTING)

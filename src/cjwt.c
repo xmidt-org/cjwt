@@ -116,7 +116,7 @@ static cjwt_alg_t cjwt_alg_str_to_enum( const char *alg_str )
     return algo;
 }
 
-static void inline cjwt_delete_child_json( cJSON* j, const char* s )
+inline static void cjwt_delete_child_json( cJSON* j, const char* s )
 {
     if( j && cJSON_HasObjectItem( j, s ) ) {
         cJSON_DeleteItemFromObject( j, s );
@@ -252,9 +252,9 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
 
     if( !decoded_sig ) {
         cjwt_error( "memory allocation failed\n" );
-		//free rsa
-		RSA_free( rsa );
-		cjwt_rsa_error();
+        //free rsa
+        RSA_free( rsa );
+        cjwt_rsa_error();
         return ENOMEM;
     }
 
@@ -266,7 +266,7 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
 
     if( !sig_desize ) {
         cjwt_error( "b64url_decode failed\n" );
-		goto end;
+        goto end;
     }
 
     decoded_sig[sig_desize] = '\0';
@@ -294,8 +294,8 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
             break;
         default:
             cjwt_error( "invalid rsa algorithm\n" );
-			ret = EINVAL;
-			break;
+            ret = EINVAL;
+            break;
     }
 end:
     RSA_free( rsa );
@@ -549,7 +549,7 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
 
     if( !out_size ) {
         ret = EINVAL;
-		goto end;
+        goto end;
     }
 
     decoded_pl[out_size] = '\0';
@@ -560,11 +560,12 @@ end:
 }
 
 static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
-{   	int sz_head, ret = 0;
-	size_t head_desize;
-	uint8_t *decoded_head;
-	size_t out_size = 0;
-	 
+{
+    int sz_head, ret = 0;
+    size_t head_desize;
+    uint8_t *decoded_head;
+    size_t out_size = 0;
+
     if( !p_cjwt || !p_head ) {
         return EINVAL;
     }
@@ -588,7 +589,7 @@ static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
 
     if( !out_size ) {
         ret = EINVAL;
-		goto end;
+        goto end;
     }
 
     decoded_head[out_size] = '\0';
@@ -642,6 +643,8 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     int ret = 0;
     //char *enc_token;
     char *payload, *signature;
+
+    (void) options;
 
     //validate inputs
     if( !encoded || !jwt ) {
