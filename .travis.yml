@@ -33,4 +33,5 @@ script:
     - make test
 
 after_success:
+    - ls -Rla
     - codecov
