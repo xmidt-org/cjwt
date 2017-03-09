@@ -23,5 +23,5 @@ link_directories ( ${LIBRARY_DIR} )
 add_test(NAME cjwt_test COMMAND cjwt_test)
 add_executable(cjwt_test cjwt_test.c ../src/cjwt.c)
 
-target_link_libraries (cjwt_test gcov -lssl -lcrypto -lpthread -ltrower-base64 -lcjson -lcheck -lm)
+target_link_libraries (cjwt_test gcov -lssl -lcrypto -lpthread -ltrower-base64 -lcjson -lcheck -lrt -lm)
 			
