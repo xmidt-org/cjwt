@@ -244,7 +244,7 @@ int main()
     srunner_free( sr );
 	printf("Fail count = %d\n",number_failed);
     //return ( number_failed == 0 ) ? EXIT_SUCCESS : EXIT_FAILURE; //TBD, inconsistent return value
-	return 0;
+	return 0-number_failed;
 }
 
 
