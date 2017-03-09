@@ -85,7 +85,7 @@ static cjwt_alg_t cjwt_alg_str_to_enum( const char *alg_str )
 {
     struct alg_map {
         cjwt_alg_t alg;
-        const char const *text;
+        const char *text;
     };
     const struct alg_map m[] = {
         { .alg = alg_none,  .text = "none"  },
@@ -687,7 +687,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     signature[0] = '\0';
     signature++;
     //create cjson
-    cjwt_t *out = cjwt_create( &out );
+    cjwt_t *out = cjwt_create();
 
     if( !out ) {
         cjwt_error( "cjwt memory alloc failed\n" );
