@@ -35,8 +35,4 @@ script:
     - make test
 
 after_success:
-    - find . -name *.gcno
-    - pwd
-    - bash <(curl -s https://codecov.io/bash) -F unittests -v || echo "Codecov did not collect coverage reports"
-    - pwd
-    - find . -name *.gcno
+    - bash <(curl -s https://codecov.io/bash) -F unittests || echo "Codecov did not collect coverage reports"
