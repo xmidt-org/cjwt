@@ -11,14 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-cmake_minimum_required(VERSION 2.8.7)
 
 set(PROJ_CJWT cjwt)
-
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-error=missing-field-initializers -W")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -W")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-
 
 file(GLOB HEADERS cjwt.h)
 set(SOURCES cjwt.c)
@@ -26,8 +20,6 @@ set(SOURCES cjwt.c)
 add_library(${PROJ_CJWT} STATIC ${HEADERS} ${SOURCES})
 add_library(${PROJ_CJWT}.shared SHARED ${HEADERS} ${SOURCES})
 set_target_properties(${PROJ_CJWT}.shared PROPERTIES OUTPUT_NAME ${PROJ_CJWT})
-set_property(TARGET ${PROJ_CJWT} PROPERTY C_STANDARD 99)
-set_property(TARGET ${PROJ_CJWT}.shared PROPERTY C_STANDARD 99)
 
 install (TARGETS ${PROJ_CJWT} DESTINATION lib${LIB_SUFFIX})
 install (TARGETS ${PROJ_CJWT}.shared DESTINATION lib${LIB_SUFFIX})

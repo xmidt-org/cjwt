@@ -18,30 +18,19 @@ project(cjwt)
 include(ExternalProject)
 include(CTest)
 
-add_definitions(-std=c99)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -D_POSIX_C_SOURCE=199309L")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Werror -Wall -D_POSIX_C_SOURCE=199309L")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Werror -Wall")
 
-set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/_install)
 set(PREFIX_DIR ${CMAKE_CURRENT_BINARY_DIR}/_prefix)
 set(INCLUDE_DIR ${INSTALL_DIR}/include)
 set(LIBRARY_DIR ${INSTALL_DIR}/lib${LIB_SUFFIX})
 
-set(CJWT_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../include)
-set(CJWT_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/../libcjwt)
-set(CJWT_TEST_DIR ${CMAKE_CURRENT_BINARY_DIR}/../tests)
-
-include_directories(${CJWT_INCLUDE_DIR}
-					${CJWT_SRC_DIR}
-					${INCLUDE_DIR}
+include_directories(${INCLUDE_DIR}
                     ${INCLUDE_DIR}/cjson
                     ${INCLUDE_DIR}/trower-base64)
 include_directories (SYSTEM /usr/include)
 link_directories ( ${LIBRARY_DIR} )
-
-
-
 
 if (NOT BUILD_YOCTO)
 
@@ -50,7 +39,7 @@ ExternalProject_Add(trower-base64
     PREFIX ${PREFIX_DIR}/trower-base64
     GIT_REPOSITORY https://github.com/Comcast/trower-base64.git
     GIT_TAG "master"
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR})
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF)
 add_library(libtrower-base64 STATIC IMPORTED)
 add_dependencies(libtrower-base64 trower-base64)
 
@@ -59,8 +48,7 @@ ExternalProject_Add(cJSON
     PREFIX ${PREFIX_DIR}/cJSON
     GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
     GIT_TAG "aafb64a1c549b7b927e339df6d35b1d5059dc235"
-    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
-)
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF)
 add_library(libcjson STATIC IMPORTED)
 add_dependencies(libcjson cjson)
 
@@ -70,6 +58,5 @@ add_subdirectory(src)
 
 # Unit tests
 if (BUILD_TESTING)
-	enable_testing()
 	add_subdirectory(tests)
 endif (BUILD_TESTING)
