@@ -33,8 +33,6 @@ include_directories(${INCLUDE_DIR}
 include_directories (SYSTEM /usr/include)
 link_directories ( ${LIBRARY_DIR} )
 
-enable_testing()
-
 if (NOT BUILD_YOCTO)
 
 # base64 external dependency
@@ -42,7 +40,7 @@ ExternalProject_Add(trower-base64
     PREFIX ${PREFIX_DIR}/trower-base64
     GIT_REPOSITORY https://github.com/Comcast/trower-base64.git
     GIT_TAG "master"
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR})
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF)
 add_library(libtrower-base64 STATIC IMPORTED)
 add_dependencies(libtrower-base64 trower-base64)
 
@@ -51,8 +49,7 @@ ExternalProject_Add(cJSON
     PREFIX ${PREFIX_DIR}/cJSON
     GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
     GIT_TAG "aafb64a1c549b7b927e339df6d35b1d5059dc235"
-    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
-)
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF)
 add_library(libcjson STATIC IMPORTED)
 add_dependencies(libcjson cjson)
 
