@@ -83,37 +83,36 @@
 
 static cjwt_alg_t cjwt_alg_str_to_enum( const char *alg_str )
 {
-    cjwt_alg_t algo = alg_none;
+    struct alg_map {
+        cjwt_alg_t alg;
+        const char const *text;
+    };
+    const struct alg_map m[] = {
+        { .alg = alg_none,  .text = "none"  },
+        { .alg = alg_es256, .text = "ES256" },
+        { .alg = alg_es384, .text = "ES384" },
+        { .alg = alg_es512, .text = "ES512" },
+        { .alg = alg_hs256, .text = "HS256" },
+        { .alg = alg_hs384, .text = "HS384" },
+        { .alg = alg_hs512, .text = "HS512" },
+        { .alg = alg_ps256, .text = "PS256" },
+        { .alg = alg_ps384, .text = "PS384" },
+        { .alg = alg_ps512, .text = "PS512" },
+        { .alg = alg_rs256, .text = "RS256" },
+        { .alg = alg_rs384, .text = "RS384" },
+        { .alg = alg_rs512, .text = "RS512" }
+    };
+    size_t count, i;
 
-    if( !strcasecmp( alg_str, "none" ) ) {
-        algo = alg_none;
-    } else if( !strcasecmp( alg_str, "ES256" ) ) {
-        algo = alg_es256;
-    } else if( !strcasecmp( alg_str, "ES384" ) ) {
-        algo = alg_es384;
-    } else if( !strcasecmp( alg_str, "ES512" ) ) {
-        algo = alg_es512;
-    } else if( !strcasecmp( alg_str, "HS256" ) ) {
-        algo = alg_hs256;
-    } else if( !strcasecmp( alg_str, "HS384" ) ) {
-        algo = alg_hs384;
-    } else if( !strcasecmp( alg_str, "HS512" ) ) {
-        algo = alg_hs512;
-    } else if( !strcasecmp( alg_str, "PS256" ) ) {
-        algo = alg_ps256;
-    } else if( !strcasecmp( alg_str, "PS384" ) ) {
-        algo = alg_ps384;
-    } else if( !strcasecmp( alg_str, "PS512" ) ) {
-        algo = alg_ps512;
-    } else if( !strcasecmp( alg_str, "RS256" ) ) {
-        algo = alg_rs256;
-    } else if( !strcasecmp( alg_str, "RS384" ) ) {
-        algo = alg_rs384;
-    } else if( !strcasecmp( alg_str, "RS512" ) ) {
-        algo = alg_rs512;
+    count = sizeof(m) / sizeof(struct alg_map);
+
+    for( i = 0; i < count; i++ ) {
+        if( !strcasecmp( alg_str, m[i].text ) ) {
+            return m[i].alg;
+        }
     }
 
-    return algo;
+    return alg_none;
 }
 
 inline static void cjwt_delete_child_json( cJSON* j, const char* s )
