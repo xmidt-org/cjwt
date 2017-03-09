@@ -20,7 +20,7 @@ find_package (Threads)
 
 link_directories ( ${LIBRARY_DIR} )
 
-add_test(NAME cjwt_test COMMAND cjwt_test)
+add_test(NAME cjwt_test COMMAND cjwt_test WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/.. )
 add_executable(cjwt_test cjwt_test.c ../src/cjwt.c)
 
 target_link_libraries (cjwt_test gcov -lssl -lcrypto -lpthread -ltrower-base64 -lcjson -lcheck -lrt -lm)
