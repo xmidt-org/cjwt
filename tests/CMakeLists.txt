@@ -16,10 +16,12 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-error=missing-field-initializers
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -W  -g -fprofile-arcs -ftest-coverage -O0")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage -O0")
 
+find_package (Threads)
+
 link_directories ( ${LIBRARY_DIR} )
 
 add_test(NAME cjwt_test COMMAND cjwt_test)
 add_executable(cjwt_test cjwt_test.c ../src/cjwt.c)
 
-target_link_libraries (cjwt_test gcov -lssl -lcrypto -ltrower-base64 -lcjson -lcheck -lm)
+target_link_libraries (cjwt_test gcov -lssl -lcrypto -lpthread -ltrower-base64 -lcjson -lcheck -lm)
 			
