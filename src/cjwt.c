@@ -103,7 +103,8 @@ static cjwt_alg_t cjwt_alg_str_to_enum( const char *alg_str )
         { .alg = alg_rs512, .text = "RS512" }
     };
     size_t count, i;
-    count = sizeof( m ) / sizeof( struct alg_map );
+
+    count = sizeof(m) / sizeof(struct alg_map);
 
     for( i = 0; i < count; i++ ) {
         if( !strcasecmp( alg_str, m[i].text ) ) {
@@ -699,6 +700,8 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     char *payload, *signature;
     ( void )options; //suppressing unused parameter warning
 
+    (void) options;
+
     //validate inputs
     if( !encoded || !jwt ) {
         cjwt_error( "null parameter\n" );
@@ -741,7 +744,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     signature[0] = '\0';
     signature++;
     //create cjson
-    cjwt_t *out = cjwt_create( &out );
+    cjwt_t *out = cjwt_create();
 
     if( !out ) {
         cjwt_error( "cjwt memory alloc failed\n" );
