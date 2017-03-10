@@ -62,18 +62,22 @@ typedef struct {
      */
 } cjwt_header_t;
 
+typedef struct cjwt_aud_list {
+    int  count;
+    char **names;
+} cjwt_aud_list_t, *p_cjwt_aud_list;
+
 typedef struct {
     cjwt_header_t header;
 
     char *iss;
     char *sub;
-    char *aud;
+    char *jti;
+    p_cjwt_aud_list aud;
 
     struct timespec exp;
     struct timespec nbf;
     struct timespec iat;
-
-    char *jti;
 
     cJSON *private_claims;
 
