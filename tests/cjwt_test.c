@@ -100,7 +100,8 @@ test_case_t test_list[] = {
     {true, "jwt9_hs384.txt", true, "key9_hs384.pem", "HS384 claims on on"},
     {true, "jwt10_hs512.txt", true, "key10_hs512.pem", "HS512 claims on on"},
     {false, "jwt11.txt", false, "incorrect_key", "RS256 claims all"},
-    {false, "jwt12.txt", false, "incorrect_key", "RS256 claims all"}
+    {false, "jwt12.txt", false, "incorrect_key", "RS256 claims all"},
+	{false, "jwt13.txt", false, "incorrect_key", "RS256 claims all"}
 };
 
 #define _NUM_TEST_CASES ( sizeof(test_list) / sizeof(test_case_t) )
