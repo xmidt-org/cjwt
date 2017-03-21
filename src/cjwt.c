@@ -74,7 +74,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-/* none */
+extern char *strdup(const char *s);
 
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
@@ -354,8 +354,7 @@ end:
 static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
 {
     cJSON*  j_val = NULL;
-    int     len = 0;
-
+   
     if( !p_cjwt || !p_decpl ) {
         return EINVAL;
     }
@@ -379,16 +378,12 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
             p_cjwt->iss = NULL;
         }
 
-        len = strlen( j_val->valuestring ) + 1;
-        p_cjwt->iss = malloc( len );
+        p_cjwt->iss = strdup(j_val->valuestring);
 
         if( !p_cjwt->iss ) {
             cJSON_Delete( j_payload );
             return ENOMEM;
         }
-
-        strcpy( p_cjwt->iss, j_val->valuestring );
-        p_cjwt->iss[len] = '\0';
     }
 
     //sub
@@ -400,16 +395,12 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
             p_cjwt->sub = NULL;
         }
 
-        len = strlen( j_val->valuestring ) + 1;
-        p_cjwt->sub = malloc( len );
+        p_cjwt->sub = strdup(j_val->valuestring);
 
         if( !p_cjwt->sub ) {
             cJSON_Delete( j_payload );
             return ENOMEM;
         }
-
-        strcpy( p_cjwt->sub, j_val->valuestring );
-        p_cjwt->sub[len] = '\0';
     }
 
     //aud
@@ -435,8 +426,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
                 cjwt_info( "aud[%d] Json  = %s,type=%d,val=%s\n", i, cJSON_Print( j_tmp ), j_tmp->type, j_tmp->valuestring );
 
                 if( j_tmp->type == cJSON_String ) {
-                    len = strlen( j_tmp->valuestring ) + 1;
-                    str_val = malloc( len );
+                    str_val =  strdup(j_tmp->valuestring);
 
                     if( !str_val ) {
                         cJSON_Delete( j_payload );
@@ -449,12 +439,10 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
                         return ENOMEM;
                     }
 
-                    strcpy( str_val, j_tmp->valuestring );
-                    str_val[len] = '\0';
                     ptr_values[i] = str_val;
                 }
             }//for
-
+			
             p_cjwt_aud_list aud_new = malloc( sizeof( cjwt_aud_list_t ) );
 
             if( !aud_new ) {
@@ -482,16 +470,12 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
             p_cjwt->jti = NULL;
         }
 
-        len = strlen( j_val->valuestring ) + 1;
-        p_cjwt->jti = malloc( len );
+        p_cjwt->jti = strdup(j_val->valuestring);
 
         if( !p_cjwt->jti ) {
             cJSON_Delete( j_payload );
             return ENOMEM;
         }
-
-        strcpy( p_cjwt->jti, j_val->valuestring );
-        p_cjwt->jti[len] = '\0';
     }
 
     //exp
