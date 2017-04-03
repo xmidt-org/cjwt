@@ -75,6 +75,9 @@
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 extern char *strdup(const char *s);
+extern size_t b64url_get_decoded_buffer_size( const size_t encoded_size );
+extern size_t b64url_decode( const uint8_t *input, const size_t input_size, uint8_t *output );
+
 
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
