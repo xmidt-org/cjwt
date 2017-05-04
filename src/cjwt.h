@@ -41,7 +41,8 @@ typedef enum {
     alg_ps512,
     alg_rs256,
     alg_rs384,
-    alg_rs512
+    alg_rs512,
+    num_algorithms
 } cjwt_alg_t;
 
 typedef struct {
@@ -122,3 +123,13 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
  *  @retval   0 successful
  */
 int cjwt_destroy( cjwt_t **jwt );
+
+
+/**
+ *  The function to convert an algorith text string to an enum
+ *
+ *  @param alg_str  string specification of algorithm
+ *
+ *  @retval  enum of algorithm, -1 if invalid
+ */
+int cjwt_alg_str_to_enum( const char *alg_str );

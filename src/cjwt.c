@@ -84,7 +84,7 @@ extern size_t b64url_decode( const uint8_t *input, const size_t input_size, uint
 /*----------------------------------------------------------------------------*/
 /* none */
 
-static cjwt_alg_t cjwt_alg_str_to_enum( const char *alg_str )
+int cjwt_alg_str_to_enum( const char *alg_str )
 {
     struct alg_map {
         cjwt_alg_t alg;
@@ -114,8 +114,18 @@ static cjwt_alg_t cjwt_alg_str_to_enum( const char *alg_str )
         }
     }
 
-    return alg_none;
+    return -1;
 }
+
+static cjwt_alg_t __cjwt_alg_str_to_enum( const char *alg_str )
+{
+  int alg = cjwt_alg_str_to_enum (alg_str);
+  if (alg >= 0)
+		return alg;
+	else
+		return alg_none;
+}
+
 
 inline static void cjwt_delete_child_json( cJSON* j, const char* s )
 {
@@ -564,7 +574,7 @@ static int cjwt_update_header( cjwt_t *p_cjwt, char *p_dechead )
     cJSON* j_alg = cJSON_GetObjectItem( j_header, "alg" );
 
     if( j_alg ) {
-        p_cjwt->header.alg = cjwt_alg_str_to_enum( j_alg->valuestring );
+        p_cjwt->header.alg = __cjwt_alg_str_to_enum( j_alg->valuestring );
     }
 
     //destroy cJSON object
