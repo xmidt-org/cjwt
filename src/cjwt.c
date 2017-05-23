@@ -36,7 +36,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-//#define _DEBUG
+#define _DEBUG
 #ifdef _DEBUG
 
 #define cjwt_error(...) printf(__VA_ARGS__)
@@ -683,15 +683,10 @@ static cjwt_t* cjwt_create()
 {
     cjwt_t *init = malloc( sizeof( cjwt_t ) );
 
-    if( !init ) {
-        return NULL;
+    if( init ) {
+			memset (init, 0, sizeof(cjwt_t));
     }
 
-    init->iss = NULL;
-    init->sub = NULL;
-    init->aud = NULL;
-    init->jti = NULL;
-    init->private_claims = NULL;
     return init;
 }
 
