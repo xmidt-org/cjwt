@@ -140,6 +140,9 @@ static void cjwt_delete_public_claims( cJSON* val )
     cjwt_delete_child_json( val, "sub" );
     cjwt_delete_child_json( val, "aud" );
     cjwt_delete_child_json( val, "jti" );
+    cjwt_delete_child_json( val, "exp" );
+    cjwt_delete_child_json( val, "nbf" );
+    cjwt_delete_child_json( val, "iat" );
 }
 
 static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *alg,
