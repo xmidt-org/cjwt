@@ -140,6 +140,9 @@ static void cjwt_delete_public_claims( cJSON* val )
     cjwt_delete_child_json( val, "sub" );
     cjwt_delete_child_json( val, "aud" );
     cjwt_delete_child_json( val, "jti" );
+    cjwt_delete_child_json( val, "exp" );
+    cjwt_delete_child_json( val, "nbf" );
+    cjwt_delete_child_json( val, "iat" );
 }
 
 static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *alg,
@@ -683,15 +686,10 @@ static cjwt_t* cjwt_create()
 {
     cjwt_t *init = malloc( sizeof( cjwt_t ) );
 
-    if( !init ) {
-        return NULL;
+    if( init ) {
+			memset (init, 0, sizeof(cjwt_t));
     }
 
-    init->iss = NULL;
-    init->sub = NULL;
-    init->aud = NULL;
-    init->jti = NULL;
-    init->private_claims = NULL;
     return init;
 }
 
