@@ -195,7 +195,7 @@ START_TEST( test_cjwt_decode )
         printf( "\n--- Test %s expected bad\n", decode_test_name );
     }
 
-	memset( jwt_buf, 0, sizeof(jwt_buf) );
+		memset( jwt_buf, 0, sizeof(jwt_buf) );
     printf( "--- Input jwt : %s \n", jwt_fname );
     jwt_bytes = read_file( jwt_fname, jwt_buf, sizeof( jwt_buf ) );
 

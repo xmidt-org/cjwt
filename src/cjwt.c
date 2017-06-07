@@ -120,6 +120,7 @@ int cjwt_alg_str_to_enum( const char *alg_str )
 static cjwt_alg_t __cjwt_alg_str_to_enum( const char *alg_str )
 {
   int alg = cjwt_alg_str_to_enum (alg_str);
+
   if (alg >= 0)
 		return alg;
 	else
