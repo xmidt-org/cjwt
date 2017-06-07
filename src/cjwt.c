@@ -90,6 +90,7 @@ int cjwt_alg_str_to_enum( const char *alg_str )
         cjwt_alg_t alg;
         const char *text;
     };
+
     const struct alg_map m[] = {
         { .alg = alg_none,  .text = "none"  },
         { .alg = alg_es256, .text = "ES256" },

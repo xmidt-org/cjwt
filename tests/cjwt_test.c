@@ -244,9 +244,9 @@ int main()
     number_failed = srunner_ntests_failed( sr );
     srunner_print( sr, CK_NORMAL );
     srunner_free( sr );
-	printf("Fail count = %d\n",number_failed);
+  	printf("Fail count = %d\n",number_failed);
     //return ( number_failed == 0 ) ? EXIT_SUCCESS : EXIT_FAILURE; //TBD, inconsistent return value
-	return 0-number_failed;
+	  return 0-number_failed;
 }
 
 
