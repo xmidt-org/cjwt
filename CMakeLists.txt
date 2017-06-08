@@ -40,7 +40,7 @@ ExternalProject_Add(trower-base64
     GIT_REPOSITORY https://github.com/Comcast/trower-base64.git
     GIT_TAG "master"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF)
-add_library(libtrower-base64 STATIC IMPORTED)
+add_library(libtrower-base64 STATIC SHARED IMPORTED)
 add_dependencies(libtrower-base64 trower-base64)
 
 # cJSON external dependency
