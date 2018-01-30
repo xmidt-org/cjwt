@@ -452,7 +452,8 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
                         while( i ) {
                             free( ptr_values[--i] );
                         }
-
+                        
+                        free (ptr_values);
                         return ENOMEM;
                     }
 
@@ -469,6 +470,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
                     free( ptr_values[--cnt] );
                 }
 
+                free (ptr_values);
                 return ENOMEM;
             }
 
