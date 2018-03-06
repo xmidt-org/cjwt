@@ -23,7 +23,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Werror -Wall")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 set(CMAKE_MACOSX_RPATH 1)
-set(OPENSSL_INCLUDE_DIR /usr/local/opt/openssl/include)
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
 endif()
 
@@ -35,7 +34,11 @@ set(LIBRARY_DIR ${INSTALL_DIR}/lib${LIB_SUFFIX})
 include_directories(${INCLUDE_DIR}
                     ${INCLUDE_DIR}/cjson
                     ${INCLUDE_DIR}/trower-base64)
-include_directories (SYSTEM /usr/include)
+include_directories (SYSTEM /usr/include
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                            /usr/local/opt/openssl/include
+endif()
+)
 link_directories ( ${LIBRARY_DIR} )
 
 if (NOT BUILD_YOCTO)
