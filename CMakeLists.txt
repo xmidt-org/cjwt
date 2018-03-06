@@ -21,6 +21,11 @@ include(CTest)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Werror -Wall -D_POSIX_C_SOURCE=199309L")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Werror -Wall")
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
+endif()
+
 set(INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/_install)
 set(PREFIX_DIR ${CMAKE_CURRENT_BINARY_DIR}/_prefix)
 set(INCLUDE_DIR ${INSTALL_DIR}/include)
@@ -29,7 +34,11 @@ set(LIBRARY_DIR ${INSTALL_DIR}/lib${LIB_SUFFIX})
 include_directories(${INCLUDE_DIR}
                     ${INCLUDE_DIR}/cjson
                     ${INCLUDE_DIR}/trower-base64)
-include_directories (SYSTEM /usr/include)
+include_directories (SYSTEM /usr/include
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                            /usr/local/opt/openssl/include
+endif()
+)
 link_directories ( ${LIBRARY_DIR} )
 
 if (NOT BUILD_YOCTO)
@@ -48,7 +57,11 @@ ExternalProject_Add(cJSON
     PREFIX ${PREFIX_DIR}/cJSON
     GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
     GIT_TAG "aafb64a1c549b7b927e339df6d35b1d5059dc235"
-    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF)
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    CMAKE_ARGS += -DCMAKE_MACOSX_RPATH=true
+endif()
+)
 add_library(libcjson STATIC IMPORTED)
 add_dependencies(libcjson cjson)
 

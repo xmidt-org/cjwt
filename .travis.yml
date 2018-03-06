@@ -2,8 +2,18 @@ dist: trusty
 sudo: required
 
 language: c
+os:
+    - linux
+    - osx
+
+matrix:
+    include:
+        - os: linux
+          dist: trusty
+          sudo: required
 compiler:
     - gcc
+    - clang
 env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
@@ -21,11 +31,13 @@ addons:
     branch_pattern: ignore_master
 
 before_install:
-    - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo pip install codecov; fi
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-; fi
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq; fi
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y -qq check; fi 
+    - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then brew install cunit check; fi
 
 install:
-    - sudo apt-get update -qq
-    - sudo apt-get install -y -qq check
 
 script:
     - mkdir build
@@ -35,4 +47,4 @@ script:
     - make test
 
 after_success:
-    - bash <(curl -s https://codecov.io/bash) -F unittests || echo "Codecov did not collect coverage reports"
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash <(curl -s https://codecov.io/bash) -F unittests || echo "Codecov did not collect coverage reports"; fi
