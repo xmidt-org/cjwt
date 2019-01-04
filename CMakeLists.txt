@@ -29,9 +29,9 @@ endif()
 set(INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/_install)
 set(PREFIX_DIR ${CMAKE_CURRENT_BINARY_DIR}/_prefix)
 set(INCLUDE_DIR ${INSTALL_DIR}/include)
-#set(LIBRARY_DIR ${INSTALL_DIR}/lib${LIB_SUFFIX})
-set(LIBRARY_DIR ${INSTALL_DIR}/lib)
-set(LIBRARY_DIR64 ${INSTALL_DIR}/lib64)
+set(LIBRARY_DIR ${INSTALL_DIR}/lib${LIB_SUFFIX})
+#set(LIBRARY_DIR ${INSTALL_DIR}/lib)
+#set(LIBRARY_DIR64 ${INSTALL_DIR}/lib64)
 
 include_directories(${INCLUDE_DIR}
                     ${INCLUDE_DIR}/cjson
@@ -41,7 +41,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                             /usr/local/opt/openssl/include
 endif()
 )
-link_directories ( ${LIBRARY_DIR} ${LIBRARY_DIR64} )
+link_directories ( ${LIBRARY_DIR} )
 
 if (NOT BUILD_YOCTO)
 
@@ -72,6 +72,6 @@ endif ()
 add_subdirectory(src)
 
 # Unit tests
-#if (BUILD_TESTING)
-#	add_subdirectory(tests)
-#endif (BUILD_TESTING)
+if (BUILD_TESTING)
+	add_subdirectory(tests)
+endif (BUILD_TESTING)
