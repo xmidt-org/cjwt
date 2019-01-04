@@ -18,12 +18,15 @@ set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-cov
 
 find_package (Threads)
 
-link_directories ( ${LIBRARY_DIR} )
+link_directories ( ${LIBRARY_DIR} ${LIBRARY_DIR64} )
 
 add_test(NAME cjwt_test COMMAND cjwt_test WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/.. )
 add_executable(cjwt_test cjwt_test.c ../src/cjwt.c)
 
-target_link_libraries (cjwt_test -lssl -lcrypto -lpthread -ltrower-base64 -lcjson -lcheck -lm)
+target_link_libraries (cjwt_test -lssl -lcrypto -lpthread -ltrower-base64
+ -lcjson 
+ /usr/lib64/libcheck.so
+ -lm)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (cjwt_test gcov)
 target_link_libraries (cjwt_test rt)

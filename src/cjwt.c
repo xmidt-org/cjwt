@@ -211,6 +211,7 @@ static RSA* cjwt_create_rsa( unsigned char *key, int public )
     if( rsa == NULL ) {
         cjwt_rsa_error();
     }
+    BIO_free (keybio);
 
 rsa_end:
     return rsa;
@@ -855,6 +856,7 @@ int cjwt_destroy( cjwt_t **jwt )
     }
 
     del->private_claims = NULL;
+    free (del);
     return 0;
 }
 //end of file
