@@ -704,6 +704,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
                  const uint8_t *key, size_t key_len )
 {
     int ret = 0;
+    int sz_encoded = 0;
     char *payload, *signature;
     ( void )options; //suppressing unused parameter warning
     ( void ) options;
@@ -716,8 +717,10 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     }
 
     cjwt_info( "parameters cjwt_decode()\n encoded : %s\n options : %d\n", encoded, options );
-    //create copy
-    char *enc_token = malloc( strlen( encoded ) + 1 );
+    //create copy with enough space for '.' at the end
+    sz_encoded = strlen( ( char * )encoded );
+
+    char *enc_token = malloc( sz_encoded + 2 );
 
     if( !enc_token ) {
         cjwt_error( "memory alloc failed\n" );
@@ -783,7 +786,8 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     }
 
     if( out->header.alg != alg_none ) {
-        enc_token[strlen( enc_token )] = '.';
+        enc_token[sz_encoded] = '.';
+        enc_token[sz_encoded + 1] = '\0';
         //verify
         ret = cjwt_verify_signature( out, enc_token, signature );
 
