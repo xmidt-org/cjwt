@@ -240,7 +240,10 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
     //decode p_sigb64
     sz_sigb64 = strlen( ( char * )p_sigb64 );
     sig_desize = b64url_get_decoded_buffer_size( sz_sigb64 );
-    decoded_sig = malloc( sig_desize + 1 );
+    //Because b64url_decode() always writes in blocks of 3 bytes for every 4 
+    //characters even when the last 2 bytes are not used, we need up to 2 
+    //extra bytes of output buffer to avoid a buffer overrun 
+    decoded_sig = malloc( sig_desize + 2 );
 
     if( !decoded_sig ) {
         cjwt_error( "memory allocation failed\n" );
@@ -250,7 +253,7 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
         return ENOMEM;
     }
 
-    memset( decoded_sig, 0, sig_desize + 1 );
+    memset( decoded_sig, 0, sig_desize + 2 );
     sig_desize = b64url_decode( ( uint8_t * )p_sigb64, sz_sigb64, decoded_sig );
     cjwt_info( "----------------- signature ----------------- \n" );
     cjwt_info( "Bytes = %d\n", ( int )sig_desize );
