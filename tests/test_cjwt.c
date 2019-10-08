@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include <check.h>
+#include <CUnit/Basic.h>
 
 #include <cJSON.h>
 #include "../src/cjwt.h"
@@ -52,10 +52,10 @@ test_case_t test_list[] = {
     {false, "jwt2.txt", false, "test_passbad", "HS384 claims on on"},
     {true, "jwt3.txt", false, "test_passwd3", "HS512 claims on on"},
     {false, "jwt3.txt", false, "test_passbad", "HS512 claims on on"},
-    {true, "jwt4.txt", true, "pubkey4.pem", "RS256 claims on on"},
-    {false, "jwt4.txt", true, "badkey4.pem", "RS256 claims on on"},
     {true, "jwt5.txt", true, "pubkey5.pem", "RS384 claims on on"},
     {false, "jwt5.txt", true, "badkey4.pem", "RS384 claims on on"},
+    {true, "jwt4.txt", true, "pubkey4.pem", "RS256 claims on on"},
+    {false, "jwt4.txt", true, "badkey4.pem", "RS256 claims on on"},
     {true, "jwt6.txt", true, "pubkey6.pem", "RS512 claims on on"},
     {false, "jwt6.txt", true, "badkey6.pem", "RS512 claims on on"},
     {true, "jwt1x.txt", false, "test_passwd1", "HS256 claims off on"},
@@ -111,7 +111,7 @@ int open_input_file( const char *fname )
     char cwd[1024];
 
     if( getcwd( cwd, sizeof( cwd ) ) != NULL ) {
-        strcat( cwd, "/../tests/inputs/" );
+        strcat( cwd, "/../../tests/inputs/" );
     } else {
         perror( "getcwd() error" );
 		return -1;
@@ -156,7 +156,7 @@ ssize_t read_file( const char *fname, char *buf, size_t buflen )
 static unsigned int pass_cnt = 0;
 static unsigned int fail_cnt = 0;
 
-START_TEST( test_cjwt_decode )
+void test_case (unsigned _i )
 {
     const char *jwt_fname;
     const char *key_str;
@@ -165,7 +165,7 @@ START_TEST( test_cjwt_decode )
     int key_len;
     ssize_t jwt_bytes;
     int result = 0;
-    cjwt_t *jwt;
+    cjwt_t *jwt = NULL;
     char jwt_buf[65535];
     char pem_buf[8192];
     jwt_fname = test_list[_i].jwt_file_name;
@@ -183,7 +183,7 @@ START_TEST( test_cjwt_decode )
             key_str = ( const char * ) pem_buf;
         } else {
             printf( "Error reading pem file\n" );
-            ck_assert( 0 == 1 );
+            CU_ASSERT ( 0 == 1 );
             fail_cnt += 1;
             return;
         }
@@ -194,13 +194,15 @@ START_TEST( test_cjwt_decode )
     } else {
         printf( "\n--- Test %s expected bad\n", decode_test_name );
     }
+    printf ("key in file %d, keylen = %d\n", test_list[_i].is_key_in_file,
+        key_len);
 
-		memset( jwt_buf, 0, sizeof(jwt_buf) );
+    memset( jwt_buf, 0, sizeof(jwt_buf) );
     printf( "--- Input jwt : %s \n", jwt_fname );
     jwt_bytes = read_file( jwt_fname, jwt_buf, sizeof( jwt_buf ) );
 
     if( jwt_bytes > 0 ) {
-		result = cjwt_decode( jwt_buf, 0, &jwt, ( const uint8_t * )key_str, key_len );
+        result = cjwt_decode( jwt_buf, 0, &jwt, ( const uint8_t * )key_str, key_len );
     } else {
         result = jwt_bytes;
     }
@@ -214,40 +216,50 @@ START_TEST( test_cjwt_decode )
     }
 
     cjwt_destroy( &jwt );
-    ck_assert_int_eq( expected, ( result == 0 ) );
-    return;
-}
-END_TEST
-
-Suite *libcjwt_suite( void )
-{
-    Suite *s;
-    TCase *tc_core;
-    s = suite_create( "libcjwt cjwt_decode" );
-    tc_core = tcase_create( "cjwt_decode" );
-    pass_cnt = 0;
-    fail_cnt = 0;
-    tcase_add_loop_test( tc_core, test_cjwt_decode, 0, _NUM_TEST_CASES );
-    suite_add_tcase( s, tc_core );
-    printf( "Decode Tests passed %d\n", pass_cnt );
-    printf( "Decode Tests failed %d\n", fail_cnt );
-    return s;
+    CU_ASSERT_EQUAL ( expected, ( result == 0 ) );
 }
 
-int main()
+
+void test_cjwt (void)
 {
-    int number_failed = 0;
-    Suite *s;
-    SRunner *sr;
-    s = libcjwt_suite();
-    sr = srunner_create( s );
-    srunner_run_all( sr, CK_VERBOSE );
-    number_failed = srunner_ntests_failed( sr );
-    srunner_print( sr, CK_NORMAL );
-    srunner_free( sr );
-	printf("Fail count = %d\n",number_failed);
-    //return ( number_failed == 0 ) ? EXIT_SUCCESS : EXIT_FAILURE; //TBD, inconsistent return value
-	return 0-number_failed;
+  unsigned i;
+  for (i=0; i<_NUM_TEST_CASES; i++)
+    test_case (i);
+}
+
+
+void add_suites( CU_pSuite *suite )
+{
+    printf ("--------Start of Test Cases Execution ---------\n");
+    *suite = CU_add_suite( "tests", NULL, NULL );
+    CU_add_test( *suite, "Test cjwt", test_cjwt );
+}
+
+/*----------------------------------------------------------------------------*/
+/*                             External Functions                             */
+/*----------------------------------------------------------------------------*/
+int main( void )
+{
+    unsigned rv = 1;
+    CU_pSuite suite = NULL;
+
+    if( CUE_SUCCESS == CU_initialize_registry() ) {
+        add_suites( &suite );
+
+        if( NULL != suite ) {
+            CU_basic_set_mode( CU_BRM_VERBOSE );
+            CU_basic_run_tests();
+            printf ( "\n" );
+            CU_basic_show_failures( CU_get_failure_list() );
+            printf ( "\n\n" );
+            rv = CU_get_number_of_tests_failed();
+        }
+
+        CU_cleanup_registry();
+
+    }
+
+    return rv;
 }
 
 
