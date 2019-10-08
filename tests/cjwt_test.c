@@ -213,6 +213,7 @@ START_TEST( test_cjwt_decode )
         fail_cnt += 1;
     }
 
+    cjwt_destroy( &jwt );
     ck_assert_int_eq( expected, ( result == 0 ) );
     return;
 }

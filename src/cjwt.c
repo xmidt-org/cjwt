@@ -185,7 +185,7 @@ static int cjwt_sign( cjwt_t *cjwt, unsigned char **out, const char *in, int *ou
     return -1;
 }
 
-static RSA* cjwt_create_rsa( unsigned char *key, int public )
+static RSA* cjwt_create_rsa( unsigned char *key, int key_len, int public )
 {
     RSA *rsa = NULL;
     BIO *keybio ;
@@ -195,7 +195,7 @@ static RSA* cjwt_create_rsa( unsigned char *key, int public )
         goto rsa_end;
     }
 
-    keybio = BIO_new_mem_buf( key, -1 );
+    keybio = BIO_new_mem_buf( key, key_len );
 
     if( keybio == NULL ) {
         cjwt_error( "BIO creation for key failed\n" );
@@ -230,7 +230,7 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
         return EINVAL;
     }
 
-    rsa = cjwt_create_rsa( jwt->header.key, 1 );
+    rsa = cjwt_create_rsa( jwt->header.key, jwt->header.key_len, 1 );
 
     if( rsa == NULL ) {
         cjwt_error( "key to rsa conversion failed\n" );
@@ -551,6 +551,8 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
             }
 
             p_cjwt->private_claims = j_new;
+        } else {
+            cJSON_Delete ( j_new );
         }
     }
 
