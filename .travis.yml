@@ -43,7 +43,8 @@ install:
 script:
     - mkdir build
     - cd build
-    - cmake ..
+    - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then cmake .. -DDISABLE_VALGRIND:BOOL=true; fi
+    - if [[ "$TRAVIS_OS_NAME" != "osx"   ]]; then cmake ..; fi
     - make
     - export ARGS="-V"
     - make test
