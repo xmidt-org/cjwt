@@ -38,12 +38,11 @@ addons:
     build_command_prepend: "mkdir coverity_build && cd coverity_build && cmake .."
     build_command:   "make"
     branch_pattern: ignore_master
-  homebrew:
-    packages:
-    - cunit
 
 before_install:
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo pip install codecov; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then brew install cunit; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then brew install --HEAD valgrind; fi
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-; fi
 
 install:
