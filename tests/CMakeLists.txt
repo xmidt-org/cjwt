@@ -16,18 +16,22 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-error=missing-field-initializers
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -W  -g -fprofile-arcs -ftest-coverage -O0")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage -O0")
 
+if(NOT DISABLE_VALGRIND)
+set (MEMORY_CHECK valgrind --leak-check=full --show-reachable=yes --error-exitcode=1 -v)
+endif ()
+
 find_package (Threads)
 
 link_directories ( ${LIBRARY_DIR} )
 
-add_test(NAME cjwt_test COMMAND cjwt_test WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/.. )
-add_executable(cjwt_test cjwt_test.c ../src/cjwt.c)
+add_test(NAME test_cjwt COMMAND ${MEMORY_CHECK} ./test_cjwt)
+add_executable(test_cjwt test_cjwt.c ../src/cjwt.c)
 
-target_link_libraries (cjwt_test -lssl -lcrypto -lpthread -ltrower-base64
+target_link_libraries (test_cjwt -lssl -lcrypto -lpthread -ltrower-base64
  -lcjson 
- -lcheck
+ -lcunit
  -lm)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-target_link_libraries (cjwt_test gcov)
-target_link_libraries (cjwt_test rt)
+target_link_libraries (test_cjwt gcov)
+target_link_libraries (test_cjwt rt)
 endif()
