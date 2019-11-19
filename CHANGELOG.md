@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 - Valgrind checking and fixes.
+
+### Changed
 - Fixed memory leaks.
+- Updated the CONTRIBUTION document.
 
 ## [1.0.1]
 ### Added
