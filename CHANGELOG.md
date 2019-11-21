@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 - Valgrind checking and fixes.
+- Algorithms that are unsupported now are not mapped to alg=none to prevent untrusted
+  accidental acceptance of JWT.
 
 ### Changed
 - Fixed memory leaks.
 - Updated the CONTRIBUTION document.
+- Updated the cjwt_decode() documentation to be accurate and consistent.
 
 ## [1.0.1]
 ### Added
