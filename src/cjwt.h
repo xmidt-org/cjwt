@@ -93,7 +93,7 @@ typedef struct {
  *  The function to use to decode and validate a JWT.
  *
  *  @note This function allocates memory associated with the output jwt that
- *        must be freed.  cjwt_destroy() must be called to destry the object
+ *        must be freed.  cjwt_destroy() must be called to destroy the object
  *        when we are done with it.
  *
  *  @note This function does not
@@ -105,10 +105,10 @@ typedef struct {
  *  @param key     [IN]  the public key to use for validating the signature
  *  @param key_len [IN]  the length of the key in bytes
  *
- *  @retval   0 successful
- *  @retval  -1 invalid jwt format
- *  @retval  -2 mismatched key
- *  ... etc
+ *  @retval  0       successful
+ *  @retval  EINVAL  invalid jwt format or mismatched key
+ *  @retval  ENOMEM  unable to allocate needed memory
+ *  @retval  ENOTSUP unsupported algorithm
  */
 int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
                  const uint8_t *key, size_t key_len );

@@ -29,7 +29,7 @@
 #include "../src/cjwt.h"
 
 typedef struct {
-    bool expected;
+    int expected;
     const char *jwt_file_name;
     bool is_key_in_file;
     const char *key;
@@ -37,71 +37,72 @@ typedef struct {
 } test_case_t;
 
 test_case_t test_list[] = {
-    {true, "jwtn.txt",  false, "", "No Alg claims on on"},
-    {true, "jwtnx.txt", false, "", "No Alg claims off on"},
-    {true, "jwtny.txt", false, "", "No Alg claims off off"},
-    {false, "jwtia.txt", false, "test_passwd1", "HS256 invalid jwt"},
-    {false, "jwtib.txt", false, "test_passwd1", "HS256 invalid jwt"},
-    //{false, "jwtic.txt", false, "test_passwd1", "HS256 invalid jwt"}, /*TBD */ //FAILED test after modifying verify_signature logic
-    {false, "jwtid.txt", false, "test_passwd1", "HS256 invalid jwt"},
-    {false, "jwtie.txt", false, "test_passwd1", "HS256 invalid jwt"},
-    {false, "jwtif.txt", false, "test_passwd1", "HS256 invalid jwt"},
-    {true, "jwt1.txt", false, "test_passwd1", "HS256 claims on on"},
-    {false, "jwt1.txt", false, "test_passbad", "HS256 claims on on"},
-    {true, "jwt2.txt", false, "test_passwd2", "HS384 claims on on"},
-    {false, "jwt2.txt", false, "test_passbad", "HS384 claims on on"},
-    {true, "jwt3.txt", false, "test_passwd3", "HS512 claims on on"},
-    {false, "jwt3.txt", false, "test_passbad", "HS512 claims on on"},
-    {true, "jwt5.txt", true, "pubkey5.pem", "RS384 claims on on"},
-    {false, "jwt5.txt", true, "badkey4.pem", "RS384 claims on on"},
-    {true, "jwt4.txt", true, "pubkey4.pem", "RS256 claims on on"},
-    {false, "jwt4.txt", true, "badkey4.pem", "RS256 claims on on"},
-    {true, "jwt6.txt", true, "pubkey6.pem", "RS512 claims on on"},
-    {false, "jwt6.txt", true, "badkey6.pem", "RS512 claims on on"},
-    {true, "jwt1x.txt", false, "test_passwd1", "HS256 claims off on"},
-    {false, "jwt1x.txt", false, "test_prasswd1", "HS256 claims off on"},
-    {true, "jwt2x.txt", false, "test_passwd2", "HS384 claims off on"},
-    {false, "jwt2x.txt", false, "twest_passwd2", "HS384 claims off on"},
-    {true, "jwt3x.txt", false, "test_passwd3", "HS512 claims off on"},
-    {false, "jwt3x.txt", false, "test_passwd3...", "HS512 claims off on"},
-    {true, "jwt4x.txt", true, "pubkey4.pem", "RS256 claims off on"},
-    {false, "jwt4x.txt", true, "pubkey5.pem", "RS256 claims off on"},
-    {true, "jwt5x.txt", true, "pubkey5.pem", "RS384 claims off on"},
-    {false, "jwt5x.txt", true, "badkey5.pem", "RS384 claims off on"},
-    {true, "jwt6x.txt", true, "pubkey6.pem", "RS512 claims off on"},
-    {false, "jwt6x.txt", true, "badkey6.pem", "RS512 claims off on"},
-    {true, "jwt1y.txt", false, "test_passwd1", "HS256 claims off off"},
-    {false, "jwt1y.txt", false, "tast_passwd1", "HS256 claims off off"},
-    {true, "jwt2y.txt", false, "test_passwd2", "HS384 claims off off"},
-    {false, "jwt2y.txt", false, "test..passwd2", "HS384 claims off off"},
-    {true, "jwt3y.txt", false, "test_passwd3", "HS512 claims off off"},
-    {false, "jwt3y.txt", false, "tteesstt_passwd3", "HS512 claims off off"},
-    {true, "jwt4y.txt", true, "pubkey4.pem", "RS256 claims off off"},
-    {false, "jwt4y.txt", true, "badkey4.pem", "RS256 claims off off"},
-    {true, "jwt5y.txt", true, "pubkey5.pem", "RS384 claims off off"},
-    {false, "jwt5y.txt", true, "pubkey6.pem", "RS384 claims off off"},
-    {true, "jwt6y.txt", true, "pubkey6.pem", "RS512 claims off off"},
-    {false, "jwt6y.txt", true, "pubkey5.pem", "RS512 claims off off"},
-    {true, "jwt1l.txt", false, "test_passwd1", "HS256 claims long"},
-    {false, "jwt1l.txt", false, "test_keyword1", "HS256 claims long"},
-    {true, "jwt2l.txt", false, "test_passwd2", "HS384 claims long"},
-    {false, "jwt2l.txt", false, "test_passwd1", "HS384 claims long"},
-    {true, "jwt3l.txt", false, "test_passwd3", "HS512 claims long"},
-    {false, "jwt3l.txt", false, "passwd3", "HS512 claims long"},
-    {true, "jwt4l.txt", true, "pubkey4.pem", "RS256 claims long"},
-    {false, "jwt4l.txt", true, "badkey4.pem", "RS256 claims long"},
-    {true, "jwt5l.txt", true, "pubkey5.pem", "RS384 claims long"},
-    {false, "jwt5l.txt", true, "badkey5.pem", "RS384 claims long"},
-    {true, "jwt6l.txt", true, "pubkey6.pem", "RS512 claims long"},
-    {false, "jwt6l.txt", true, "badkey6.pem", "RS512 claims long"},
-    {true, "jwt2.txt", false, "test_passwd2", "HS384 claims on on"},
-    {true, "jwt3.txt", false, "test_passwd3", "HS512 claims on on"},
-    {true, "jwt8_hs256.txt", true, "key8_hs256.pem", "HS256 claims on on"},
-    {true, "jwt9_hs384.txt", true, "key9_hs384.pem", "HS384 claims on on"},
-    {true, "jwt10_hs512.txt", true, "key10_hs512.pem", "HS512 claims on on"},
-    {false, "jwt11.txt", false, "incorrect_key", "RS256 claims all"},
-    {false, "jwt12.txt", false, "incorrect_key", "RS256 claims all"},
-	{false, "jwt13.txt", false, "incorrect_key", "RS256 claims all"}
+    {       0, "jwtn.txt",          false, "",                  "No Alg claims on on"       },
+    {       0, "jwtnx.txt",         false, "",                  "No Alg claims off on"      },
+    {       0, "jwtny.txt",         false, "",                  "No Alg claims off off"     },
+    {  EINVAL, "jwtia.txt",         false, "test_passwd1",      "HS256 invalid jwt"         },
+    {  EINVAL, "jwtib.txt",         false, "test_passwd1",      "HS256 invalid jwt"         },
+//  {  EINVAL, "jwtic.txt",         false, "test_passwd1",      "HS256 invalid jwt"         }, /*TBD */ //FAILED test after modifying verify_signature logic
+    {  EINVAL, "jwtid.txt",         false, "test_passwd1",      "HS256 invalid jwt"         },
+    {  EINVAL, "jwtie.txt",         false, "test_passwd1",      "HS256 invalid jwt"         },
+    {  EINVAL, "jwtif.txt",         false, "test_passwd1",      "HS256 invalid jwt"         },
+    {       0, "jwt1.txt",          false, "test_passwd1",      "HS256 claims on on"        },
+    {  EINVAL, "jwt1.txt",          false, "test_passbad",      "HS256 claims on on"        },
+    {       0, "jwt2.txt",          false, "test_passwd2",      "HS384 claims on on"        },
+    {  EINVAL, "jwt2.txt",          false, "test_passbad",      "HS384 claims on on"        },
+    {       0, "jwt3.txt",          false, "test_passwd3",      "HS512 claims on on"        },
+    {  EINVAL, "jwt3.txt",          false, "test_passbad",      "HS512 claims on on"        },
+    {       0, "jwt5.txt",          true,  "pubkey5.pem",       "RS384 claims on on"        },
+    {  EINVAL, "jwt5.txt",          true,  "badkey4.pem",       "RS384 claims on on"        },
+    {       0, "jwt4.txt",          true,  "pubkey4.pem",       "RS256 claims on on"        },
+    {  EINVAL, "jwt4.txt",          true,  "badkey4.pem",       "RS256 claims on on"        },
+    {       0, "jwt6.txt",          true,  "pubkey6.pem",       "RS512 claims on on"        },
+    {  EINVAL, "jwt6.txt",          true,  "badkey6.pem",       "RS512 claims on on"        },
+    {       0, "jwt1x.txt",         false, "test_passwd1",      "HS256 claims off on"       },
+    {  EINVAL, "jwt1x.txt",         false, "test_prasswd1",     "HS256 claims off on"       },
+    {       0, "jwt2x.txt",         false, "test_passwd2",      "HS384 claims off on"       },
+    {  EINVAL, "jwt2x.txt",         false, "twest_passwd2",     "HS384 claims off on"       },
+    {       0, "jwt3x.txt",         false, "test_passwd3",      "HS512 claims off on"       },
+    {  EINVAL, "jwt3x.txt",         false, "test_passwd3...",   "HS512 claims off on"       },
+    {       0, "jwt4x.txt",         true,  "pubkey4.pem",       "RS256 claims off on"       },
+    {  EINVAL, "jwt4x.txt",         true,  "pubkey5.pem",       "RS256 claims off on"       },
+    {       0, "jwt5x.txt",         true,  "pubkey5.pem",       "RS384 claims off on"       },
+    {  EINVAL, "jwt5x.txt",         true,  "badkey5.pem",       "RS384 claims off on"       },
+    {       0, "jwt6x.txt",         true,  "pubkey6.pem",       "RS512 claims off on"       },
+    {  EINVAL, "jwt6x.txt",         true,  "badkey6.pem",       "RS512 claims off on"       },
+    {       0, "jwt1y.txt",         false, "test_passwd1",      "HS256 claims off off"      },
+    {  EINVAL, "jwt1y.txt",         false, "tast_passwd1",      "HS256 claims off off"      },
+    {       0, "jwt2y.txt",         false, "test_passwd2",      "HS384 claims off off"      },
+    {  EINVAL, "jwt2y.txt",         false, "test..passwd2",     "HS384 claims off off"      },
+    {       0, "jwt3y.txt",         false, "test_passwd3",      "HS512 claims off off"      },
+    {  EINVAL, "jwt3y.txt",         false, "tteesstt_passwd3",  "HS512 claims off off"      },
+    {       0, "jwt4y.txt",         true,  "pubkey4.pem",       "RS256 claims off off"      },
+    {  EINVAL, "jwt4y.txt",         true,  "badkey4.pem",       "RS256 claims off off"      },
+    {       0, "jwt5y.txt",         true,  "pubkey5.pem",       "RS384 claims off off"      },
+    {  EINVAL, "jwt5y.txt",         true,  "pubkey6.pem",       "RS384 claims off off"      },
+    {       0, "jwt6y.txt",         true,  "pubkey6.pem",       "RS512 claims off off"      },
+    {  EINVAL, "jwt6y.txt",         true,  "pubkey5.pem",       "RS512 claims off off"      },
+    {       0, "jwt1l.txt",         false, "test_passwd1",      "HS256 claims long"         },
+    {  EINVAL, "jwt1l.txt",         false, "test_keyword1",     "HS256 claims long"         },
+    {       0, "jwt2l.txt",         false, "test_passwd2",      "HS384 claims long"         },
+    {  EINVAL, "jwt2l.txt",         false, "test_passwd1",      "HS384 claims long"         },
+    {       0, "jwt3l.txt",         false, "test_passwd3",      "HS512 claims long"         },
+    {  EINVAL, "jwt3l.txt",         false, "passwd3",           "HS512 claims long"         },
+    {       0, "jwt4l.txt",         true,  "pubkey4.pem",       "RS256 claims long"         },
+    {  EINVAL, "jwt4l.txt",         true,  "badkey4.pem",       "RS256 claims long"         },
+    {       0, "jwt5l.txt",         true,  "pubkey5.pem",       "RS384 claims long"         },
+    {  EINVAL, "jwt5l.txt",         true,  "badkey5.pem",       "RS384 claims long"         },
+    {       0, "jwt6l.txt",         true,  "pubkey6.pem",       "RS512 claims long"         },
+    {  EINVAL, "jwt6l.txt",         true,  "badkey6.pem",       "RS512 claims long"         },
+    {       0, "jwt2.txt",          false, "test_passwd2",      "HS384 claims on on"        },
+    {       0, "jwt3.txt",          false, "test_passwd3",      "HS512 claims on on"        },
+    {       0, "jwt8_hs256.txt",    true,  "key8_hs256.pem",    "HS256 claims on on"        },
+    {       0, "jwt9_hs384.txt",    true,  "key9_hs384.pem",    "HS384 claims on on"        },
+    {       0, "jwt10_hs512.txt",   true,  "key10_hs512.pem",   "HS512 claims on on"        },
+    {  EINVAL, "jwt11.txt",         false, "incorrect_key",     "RS256 claims all"          },
+    {  EINVAL, "jwt12.txt",         false, "incorrect_key",     "RS256 claims all"          },
+	{  EINVAL, "jwt13.txt",         false, "incorrect_key",     "RS256 claims all"          },
+	{ ENOTSUP, "jwtbadalg.txt",     false, "incorrect_key",     "Invalid/unsupported alg."  }
 };
 
 #define _NUM_TEST_CASES ( sizeof(test_list) / sizeof(test_case_t) )
@@ -161,7 +162,7 @@ void test_case (unsigned _i )
     const char *jwt_fname;
     const char *key_str;
     const char *decode_test_name;
-    bool expected;
+    int expected;
     int key_len;
     ssize_t jwt_bytes;
     int result = 0;
@@ -207,16 +208,16 @@ void test_case (unsigned _i )
         result = jwt_bytes;
     }
 
-    if( expected == ( result == 0 ) ) {
+    if( expected == result ) {
         printf( "--- PASSED: %s\n", decode_test_name );
         pass_cnt += 1;
     } else {
-        printf( "--- FAILED: %s\n", decode_test_name );
+        printf( "\e[01;31m--- FAILED: %s (%d != %d)\e[00m\n", decode_test_name, expected, result );
         fail_cnt += 1;
     }
 
     cjwt_destroy( &jwt );
-    CU_ASSERT_EQUAL ( expected, ( result == 0 ) );
+    CU_ASSERT ( expected == result );
 }
 
 
