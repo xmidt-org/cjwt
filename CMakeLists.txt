@@ -18,7 +18,7 @@ project(cjwt)
 include(ExternalProject)
 include(CTest)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Werror -Wall -D_POSIX_C_SOURCE=199309L")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Werror -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Werror -Wall")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
