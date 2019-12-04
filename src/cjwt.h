@@ -21,9 +21,8 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define OPT_ALLOW_ALG_NONE              (1<<0)
-#define OPT_ALLOW_ANY_TIME              (1<<1)
-#define OPT_ALLOW_ALG_NONE_IGNORE_SIG   (1<<2)
+#define OPT_ALLOW_ALG_NONE  (1<<0)
+#define OPT_ALLOW_ANY_TIME  (1<<1)
 
 
 /*----------------------------------------------------------------------------*/
@@ -47,9 +46,9 @@ typedef enum {
 } cjwt_alg_t;
 
 typedef struct {
-    cjwt_alg_t  alg;
-    uint8_t    *key;
-    size_t      key_len;
+    cjwt_alg_t      alg;
+    unsigned char   *key;
+    int             key_len;
 
     /* Unsupported:
      *  jku
