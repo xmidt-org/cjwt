@@ -102,6 +102,12 @@ test_case_t test_list[] = {
     {  EINVAL, "jwt11.txt",         false, "incorrect_key",     "RS256 claims all"          },
     {  EINVAL, "jwt12.txt",         false, "incorrect_key",     "RS256 claims all"          },
 	{  EINVAL, "jwt13.txt",         false, "incorrect_key",     "RS256 claims all"          },
+    {  EINVAL, "jwt10_no_sig.txt",  true,  "key10_hs512.pem",   "HS512 no signature"        },
+    {  EINVAL, "jwt5x_no_sig.txt",  true,  "pubkey5.pem",       "RS384 no signature"        },
+    {  EINVAL, "jwt5x_no_sig.txt",  true,  "",                  "RS384 no key"              },
+    {  EINVAL, "jwt5x_no_sig.txt",  true,  "",                  "RS384 no key"              },
+    {  EINVAL, "jwt5x_no_sig.txt",  false, "invalid",           "RS384 invalid key"         },
+    {       0, "invalid_1.txt",     false, "invalid",           "Double issued key"         },
 	{ ENOTSUP, "jwtbadalg.txt",     false, "incorrect_key",     "Invalid/unsupported alg."  }
 };
 
@@ -154,9 +160,6 @@ ssize_t read_file( const char *fname, char *buf, size_t buflen )
     return nbytes;
 }
 
-static unsigned int pass_cnt = 0;
-static unsigned int fail_cnt = 0;
-
 void test_case (unsigned _i )
 {
     const char *jwt_fname;
@@ -185,38 +188,36 @@ void test_case (unsigned _i )
         } else {
             printf( "Error reading pem file\n" );
             CU_ASSERT ( 0 == 1 );
-            fail_cnt += 1;
             return;
         }
     }
 
-    if( expected ) {
-        printf( "\n--- Test %s expected good\n", decode_test_name );
-    } else {
-        printf( "\n--- Test %s expected bad\n", decode_test_name );
-    }
-    printf ("key in file %d, keylen = %d\n", test_list[_i].is_key_in_file,
-        key_len);
-
     memset( jwt_buf, 0, sizeof(jwt_buf) );
-    printf( "--- Input jwt : %s \n", jwt_fname );
     jwt_bytes = read_file( jwt_fname, jwt_buf, sizeof( jwt_buf ) );
 
     if( jwt_bytes > 0 ) {
-        result = cjwt_decode( jwt_buf, 0, &jwt, ( const uint8_t * )key_str, key_len );
+        result = cjwt_decode( jwt_buf, OPT_ALLOW_ALG_NONE|OPT_ALLOW_ALG_NONE_IGNORE_SIG, &jwt, ( const uint8_t * )key_str, key_len );
     } else {
         result = jwt_bytes;
     }
 
-    if( expected == result ) {
-        printf( "--- PASSED: %s\n", decode_test_name );
-        pass_cnt += 1;
-    } else {
+    if( expected != result ) {
+        if( !expected ) {
+            printf( "\n--- Test %s expected success\n", decode_test_name );
+        } else {
+            printf( "\n--- Test %s expected failure\n", decode_test_name );
+        }
+        printf ("key in file %d, keylen = %d\n", test_list[_i].is_key_in_file,
+            key_len);
+
+        printf( "--- Input jwt : %s \n", jwt_fname );
         printf( "\e[01;31m--- FAILED: %s (%d != %d)\e[00m\n", decode_test_name, expected, result );
-        fail_cnt += 1;
     }
 
-    cjwt_destroy( &jwt );
+    if( NULL != jwt ) {
+        cjwt_destroy( &jwt );
+    }
+
     CU_ASSERT ( expected == result );
 }
 
@@ -228,12 +229,76 @@ void test_cjwt (void)
     test_case (i);
 }
 
+void simple_jwt( void )
+{
+    const char *jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJleGFtcGxlLWlzc3VlciIsInN1YiI6ImV4YW1wbGUtc3ViIiwianRpIjoiZXhhbXBsZS1qdGkiLCJleHAiOjEyMzQ1LCJuYmYiOjEyMywiaWF0IjoxMjQsImF1ZCI6InNpbmdsZSJ9.4r0-KNnU99qVGTuSiDDey0JhP_Oy6lz4BLe4cpkP7QA";
+    const char *pw = "testing";
+    int result;
+    cjwt_t *got;
+
+    result = cjwt_decode( jwt, 0, &got, (const uint8_t *)pw, strlen(pw) );
+    CU_ASSERT( 0 == result );
+
+    CU_ASSERT_STRING_EQUAL( "example-issuer", got->iss );
+    CU_ASSERT_STRING_EQUAL( "example-sub",    got->sub );
+    CU_ASSERT_STRING_EQUAL( "example-jti",    got->jti );
+
+    CU_ASSERT( 12345 == got->exp.tv_sec  );
+    CU_ASSERT(     0 == got->exp.tv_nsec );
+
+    CU_ASSERT( 123 == got->nbf.tv_sec  );
+    CU_ASSERT(   0 == got->nbf.tv_nsec );
+
+    CU_ASSERT( 124 == got->iat.tv_sec  );
+    CU_ASSERT(   0 == got->iat.tv_nsec );
+
+    CU_ASSERT_FATAL( NULL != got->aud );
+    CU_ASSERT( 1 == got->aud->count );
+    CU_ASSERT_STRING_EQUAL( "single", got->aud->names[0] );
+
+    cjwt_destroy( &got );
+}
+
+void simple_array_jwt( void )
+{
+    const char *jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhbHBoYSIsInN1YiI6ImJldGEiLCJqdGkiOiJnYW1tYSIsImV4cCI6MTIzNDUuMywibmJmIjoxMjMsImlhdCI6MTI0LjksImF1ZCI6WyJvbmUiLCJ0d28iXX0.MNhlfkWsAaiZSZF6VIpsMhzPDZrRLQ9x5Ywl08TZoVg";
+    const char *pw = "testing";
+    int result;
+    cjwt_t *got;
+
+    result = cjwt_decode( jwt, 0, &got, (const uint8_t *)pw, strlen(pw) );
+    CU_ASSERT( 0 == result );
+
+    CU_ASSERT_STRING_EQUAL( "alpha", got->iss );
+    CU_ASSERT_STRING_EQUAL( "beta",  got->sub );
+    CU_ASSERT_STRING_EQUAL( "gamma", got->jti );
+
+    CU_ASSERT( 12345 == got->exp.tv_sec  );
+    CU_ASSERT(     0 == got->exp.tv_nsec );
+
+    CU_ASSERT( 123 == got->nbf.tv_sec  );
+    CU_ASSERT(   0 == got->nbf.tv_nsec );
+
+    CU_ASSERT( 124 == got->iat.tv_sec  );
+    CU_ASSERT(   0 == got->iat.tv_nsec );
+
+    CU_ASSERT_FATAL( NULL != got->aud );
+    CU_ASSERT( 2 == got->aud->count );
+    CU_ASSERT_STRING_EQUAL( "one", got->aud->names[0] );
+    CU_ASSERT_STRING_EQUAL( "two", got->aud->names[1] );
+
+    cjwt_destroy( &got );
+}
+
+
 
 void add_suites( CU_pSuite *suite )
 {
     printf ("--------Start of Test Cases Execution ---------\n");
     *suite = CU_add_suite( "tests", NULL, NULL );
-    CU_add_test( *suite, "Test cjwt", test_cjwt );
+    CU_add_test( *suite, "Basic Decoding Tests", test_cjwt );
+    CU_add_test( *suite, "Validate a simple jwt with aud", simple_jwt );
+    CU_add_test( *suite, "Validate a simple jwt with aud array", simple_array_jwt );
 }
 
 /*----------------------------------------------------------------------------*/
