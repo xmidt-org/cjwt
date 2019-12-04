@@ -35,3 +35,8 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_cjwt gcov)
 target_link_libraries (test_cjwt rt)
 endif()
+
+add_custom_target(coverage
+                  COMMAND lcov -q --capture --directory ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_cjwt.dir/__/src --output-file coverage.info
+                  COMMAND genhtml coverage.info
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
