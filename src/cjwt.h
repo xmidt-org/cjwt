@@ -92,7 +92,18 @@ typedef struct {
  *        must be freed.  cjwt_destroy() must be called to destroy the object
  *        when we are done with it.
  *
- *  @note This function does not
+ *  @note This function does not allow alg_none to pass unless the
+ *        OPT_ALLOW_ALG_NONE is passed.  In this case the signature *MUST*
+ *        be empty to pass.  Example: "<header>.<payload."
+ *
+ *        If you must allow a alg_none and a signature to be present an
+ *        additional option must be set: OPT_ALLOW_ALG_NONE_IGNORE_SIG.
+ *
+ *        Example of setting both:
+ *          OPT_ALLOW_ALG_NONE|OPT_ALLOW_ALG_NONE_IGNORE_SIG
+ *
+ *  @note If the function can't validate, or the secrets do not validate, no
+ *        cjwt_t structure is returned as a safety precaution.
  *
  *  @param encoded [IN]  the incoming encoded JWT (MUST be '\0' terminated string)
  *  @param options [IN]  a bitmask of the options
