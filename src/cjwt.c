@@ -665,12 +665,16 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
         memset( out, 0, sizeof(cjwt_t) );
 
         //parse header
-        ret = __decode_section( out, (const uint8_t*) encoded, header_len, __decode_header );
+        ret = __decode_section( out, (const uint8_t*) encoded, header_len,
+                                __decode_header );
         if( !ret ) {
-            ret = __verify_signature( out->header.alg, (const uint8_t*) encoded, validation_len, (const uint8_t*) signature, options, key, key_len );
+            ret = __verify_signature( out->header.alg, (const uint8_t*) encoded,
+                                      validation_len, (const uint8_t*) signature,
+                                      options, key, key_len );
             if( !ret ) {
                 //parse payload
-                ret = __decode_section( out, (const uint8_t*) payload, payload_len, __decode_payload );
+                ret = __decode_section( out, (const uint8_t*) payload,
+                                        payload_len, __decode_payload );
                 if( !ret ) {
                     if( jwt ) {
                         *jwt = out;
