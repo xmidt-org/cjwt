@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 Comcast Cable Communications Management, LLC
+ * Copyright 2017-2019 Comcast Cable Communications Management, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  */
+#ifndef __CJWT_H__
+#define __CJWT_H__
+
 #include <stdint.h>
 #include <time.h>
 #include <cJSON.h>
@@ -22,8 +25,7 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define OPT_ALLOW_ALG_NONE              (1<<0)
-#define OPT_ALLOW_ANY_TIME              (1<<1)
-#define OPT_ALLOW_ALG_NONE_IGNORE_SIG   (1<<2)
+#define OPT_ALLOW_ALG_NONE_IGNORE_SIG   (1<<1)
 
 
 /*----------------------------------------------------------------------------*/
@@ -48,8 +50,6 @@ typedef enum {
 
 typedef struct {
     cjwt_alg_t  alg;
-    uint8_t    *key;
-    size_t      key_len;
 
     /* Unsupported:
      *  jku
@@ -64,26 +64,21 @@ typedef struct {
      */
 } cjwt_header_t;
 
-typedef struct cjwt_aud_list {
-    int  count;
-    char **names;
-} cjwt_aud_list_t, *p_cjwt_aud_list;
-
 typedef struct {
     cjwt_header_t header;
 
     char *iss;
     char *sub;
     char *jti;
-    p_cjwt_aud_list aud;
+
+    size_t   aud_count;
+    char   **aud_names;
 
     struct timespec exp;
     struct timespec nbf;
     struct timespec iat;
 
     cJSON *private_claims;
-
-    void *internal_use_only;
 } cjwt_t;
 
 /*----------------------------------------------------------------------------*/
@@ -125,12 +120,4 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
  */
 int cjwt_destroy( cjwt_t **jwt );
 
-
-/**
- *  The function to convert an algorith text string to an enum
- *
- *  @param alg_str  string specification of algorithm
- *
- *  @retval  enum of algorithm, -1 if invalid
- */
-int cjwt_alg_str_to_enum( const char *alg_str );
+#endif

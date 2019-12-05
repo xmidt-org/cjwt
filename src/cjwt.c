@@ -80,22 +80,24 @@
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-static char *__get_cjson_string( cJSON *obj, const char *key );
-static void __get_numericdate( cJSON *obj, const char *key, struct timespec *t );
-static char *__dup_cjson_string( cJSON *obj, const char *key );
-static int __process_aud( cjwt_t *cjwt, cJSON *obj );
-static int cjwt_verify_hs( cjwt_t *cjwt, const uint8_t *in, size_t len,
-                           const uint8_t *sig, size_t sig_len );
-static int cjwt_verify_rsa( cjwt_t *cjwt, const uint8_t *in, size_t len,
-                            const uint8_t *sig, size_t sig_len );
-static int cjwt_verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
-                                  const uint8_t *b64sig, int options );
-static uint8_t* cjwt_base64_decode_blob( const uint8_t *head, size_t len, size_t *out_len );
-static int cjwt_decode_section( cjwt_t *cjwt, const uint8_t *blob, size_t len,
-                                int (*fn)(cjwt_t*,cJSON*) );
-static int cjwt_decode_header( cjwt_t *cjwt, cJSON *tree );
-static int cjwt_decode_payload( cjwt_t *cjwt, cJSON *tree );
-static cjwt_t* cjwt_create( const uint8_t *key, size_t key_len );
+static char *__get_cjson_string( cJSON *obj, const char *key, int *err );
+static void __get_numericdate( cJSON *obj, const char *key, struct timespec *t, int *err );
+static char *__dup_cjson_string( cJSON *obj, const char *key, int *err );
+static void __process_aud( cjwt_t *cjwt, cJSON *obj, int *err );
+static int __verify_hs( cjwt_t *cjwt, const uint8_t *in, size_t len,
+                        const uint8_t *sig, size_t sig_len,
+                        const uint8_t *key, size_t key_len );
+static int __verify_rsa( cjwt_t *cjwt, const uint8_t *in, size_t len,
+                         const uint8_t *sig, size_t sig_len,
+                         const uint8_t *key, size_t key_len );
+static int __verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
+                               const uint8_t *b64sig, int options,
+                               const uint8_t *key, size_t key_len );
+static uint8_t* __base64_decode_blob( const uint8_t *head, size_t len, size_t *out_len );
+static int __decode_section( cjwt_t *cjwt, const uint8_t *blob, size_t len,
+                             int (*fn)(cjwt_t*,cJSON*) );
+static int __decode_header( cjwt_t *cjwt, cJSON *tree );
+static int __decode_payload( cjwt_t *cjwt, cJSON *tree );
 
 
 /**
@@ -104,43 +106,77 @@ static cjwt_t* cjwt_create( const uint8_t *key, size_t key_len );
  *
  *  Note: Do not free() the resulting string as it is owned by the cJSON obj.
  *
- *  @param obj the cJSON object to look in for the key
- *  @param key the key to look for
+ *  @param obj  the cJSON object to look in for the key
+ *  @param key  the key to look for
+ *  @param err  where the error code is written ONLY if there is an error
  *
  *  @return the string value if successful, NULL on error
  */
-static char *__get_cjson_string( cJSON *obj, const char *key )
+static char *__get_cjson_string( cJSON *obj, const char *key, int *err )
 {
     if( obj ) {
         cJSON *value;
 
         value = cJSON_GetObjectItem( obj, key );
-        if( value && (cJSON_String == value->type) ) {
-            return value->valuestring;
+        if( value ) {
+            if( cJSON_String == value->type ) {
+                return value->valuestring;
+            } else {
+                if( err ) {
+                    *err = EINVAL;
+                }
+            }
         }
     }
 
     return NULL;
 }
 
-static void __get_numericdate( cJSON *obj, const char *key, struct timespec *t )
+
+/**
+ *  Validates and sets the JWT NumericDate based data.
+ *
+ *  @param obj  the JSON to process
+ *  @param key  the key to look for
+ *  @param t    the timespec to populate (MUST NOT BE NULL)
+ *  @param err  where the error code is written ONLY if there is an error
+ */
+static void __get_numericdate( cJSON *obj, const char *key, struct timespec *t, int *err )
 {
     if( obj ) {
         cJSON *value;
 
         value = cJSON_GetObjectItem( obj, key );
-        if( value && (cJSON_Number == value->type) ) {
-            t->tv_sec = value->valueint;
-            t->tv_nsec = 0;
+        if( value ) {
+            if( cJSON_Number == value->type ) {
+                t->tv_sec = value->valueint;
+                t->tv_nsec = 0;
+            } else {
+                if( err ) {
+                    *err = EINVAL;
+                }
+            }
         }
     }
 }
 
-static char *__dup_cjson_string( cJSON *obj, const char *key )
+
+/**
+ *  Validates and duplicates a key expected to be a string.
+ *
+ *  Note: This function results in a string that must be free()d.
+ *
+ *  @param obj  the JSON to process
+ *  @param key  the key to look for
+ *  @param err  where the error code is written ONLY if there is an error
+ *
+ *  @return NULL on error or the new string.
+ */
+static char *__dup_cjson_string( cJSON *obj, const char *key, int *err )
 {
     char *value;
 
-    value = __get_cjson_string( obj, key );
+    value = __get_cjson_string( obj, key, err );
 
     if( NULL != value ) {
         return strdup( value );
@@ -149,26 +185,33 @@ static char *__dup_cjson_string( cJSON *obj, const char *key )
     return NULL;
 }
 
-static int __process_aud( cjwt_t *cjwt, cJSON *obj )
+
+/**
+ *  Converts the 'aud' claim and validates the types match.
+ *
+ *  Note: No arguments may be NULL.
+ *
+ *  @param cjwt where to write the data
+ *  @param obj  the JSON to process
+ *  @param err  where the error code is written ONLY if there is an error
+ */
+static void __process_aud( cjwt_t *cjwt, cJSON *obj, int *err )
 {
     cJSON *aud_json;
 
+    int _err = 0;
+
     aud_json = cJSON_GetObjectItem( obj, "aud" );
     if( aud_json ) {
+        _err = ENOMEM;
         if( cJSON_String == aud_json->type ) {
-            cjwt->aud = (p_cjwt_aud_list) malloc( sizeof(cjwt_aud_list_t) );
-            if( !cjwt->aud ) {
-                return ENOMEM;
-            }
-
-            cjwt->aud->count = 1;
-            cjwt->aud->names = (char**) malloc( sizeof(char*) );
-            if( !cjwt->aud ) {
-                return ENOMEM;
-            }
-            cjwt->aud->names[0] = strdup( aud_json->valuestring );
-            if( !cjwt->aud->names[0] ) {
-                return ENOMEM;
+            cjwt->aud_count = 1;
+            cjwt->aud_names = (char**) malloc( sizeof(char*) );
+            if( cjwt->aud_names ) {
+                cjwt->aud_names[0] = strdup( aud_json->valuestring );
+                if( cjwt->aud_names[0] ) {
+                    _err = 0;
+                }
             }
         } else if( cJSON_Array == aud_json->type ) {
             int len = cJSON_GetArraySize( aud_json );
@@ -181,38 +224,51 @@ static int __process_aud( cjwt_t *cjwt, cJSON *obj )
 
                     tmp = cJSON_GetArrayItem( aud_json, i );
                     if( cJSON_String != tmp->type ) {
-                        return EINVAL;
+                        _err = EINVAL;
+                        goto done;
                     }
                 }
 
-                cjwt->aud = (p_cjwt_aud_list) malloc( sizeof(cjwt_aud_list_t) );
-                if( !cjwt->aud ) {
-                    return ENOMEM;
-                }
+                cjwt->aud_count = len;
+                cjwt->aud_names = (char**) malloc( len * sizeof(char*) );
+                if( cjwt->aud_names ) {
+                    int valid = 0;
+                    memset( cjwt->aud_names, 0, (len * sizeof(char*)) );
 
-                cjwt->aud->count = len;
-                cjwt->aud->names = (char**) malloc( len * sizeof(char*) );
-                if( !cjwt->aud ) {
-                    return ENOMEM;
-                }
-                memset( cjwt->aud->names, 0, (len * sizeof(char*)) );
-                for( i = 0; i < len; i++ ) {
-                    cJSON *tmp;
+                    for( i = 0; i < len; i++ ) {
+                        cJSON *tmp;
 
-                    tmp = cJSON_GetArrayItem( aud_json, i );
-                    cjwt->aud->names[i] = strdup( tmp->valuestring );
-                    if( !cjwt->aud->names[i] ) {
-                        return ENOMEM;
+                        tmp = cJSON_GetArrayItem( aud_json, i );
+                        cjwt->aud_names[i] = strdup( tmp->valuestring );
+                        if( cjwt->aud_names[i] ) {
+                            valid++;
+                        }
+                    }
+
+                    if( len == valid ) {
+                        _err = 0;
                     }
                 }
             }
+        } else {
+            _err = EINVAL;
         }
     }
 
-    return 0;
+done:
+    if( 0 != _err ) {
+        *err = _err;
+    }
 }
 
-int cjwt_alg_str_to_enum( const char *alg_str )
+/**
+ *  Convert the 'alg' string into an enumeration.
+ *
+ *  @param alg_str the string to convert
+ *
+ *  @return -1 on error, the cjwt_alg_t enum value when identified
+ */
+static int __alg_str_to_enum( const char *alg_str )
 {
     struct alg_map {
         cjwt_alg_t alg;
@@ -247,21 +303,22 @@ int cjwt_alg_str_to_enum( const char *alg_str )
     return -1;
 }
 
-static int cjwt_verify_hs( cjwt_t *cjwt, const uint8_t *in, size_t len, const uint8_t *sig, size_t sig_len )
+
+static int __verify_hs( cjwt_t *cjwt, const uint8_t *in, size_t len,
+                        const uint8_t *sig, size_t sig_len,
+                        const uint8_t *key, size_t key_len )
 {
-    const EVP_MD *alg;
     uint8_t result[EVP_MAX_MD_SIZE];
     unsigned int result_len;
 
-    switch( cjwt->header.alg ) {
-        case alg_hs256: alg = EVP_sha256(); break;
-        case alg_hs384: alg = EVP_sha384(); break;
-        case alg_hs512: alg = EVP_sha512(); break;
-        default:
-            return EINVAL;
+    result_len = !sig_len;
+    if( alg_hs256 == cjwt->header.alg ) {
+        HMAC( EVP_sha256(), key, key_len, in, len, result, &result_len );
+    } else if( alg_hs384 == cjwt->header.alg ) {
+        HMAC( EVP_sha384(), key, key_len, in, len, result, &result_len );
+    } else if( alg_hs512 == cjwt->header.alg ) {
+        HMAC( EVP_sha512(), key, key_len, in, len, result, &result_len );
     }
-
-    HMAC( alg, cjwt->header.key, cjwt->header.key_len, in, len, result, &result_len );
 
     if( (result_len != sig_len) || (0 != CRYPTO_memcmp(result, sig, sig_len)) ) {
         return EINVAL;
@@ -270,56 +327,55 @@ static int cjwt_verify_hs( cjwt_t *cjwt, const uint8_t *in, size_t len, const ui
     return 0;
 }
 
-static int cjwt_verify_rsa( cjwt_t *cjwt, const uint8_t *in, size_t len, const uint8_t *sig, size_t sig_len )
+static int __verify_rsa( cjwt_t *cjwt, const uint8_t *in, size_t len,
+                         const uint8_t *sig, size_t sig_len,
+                         const uint8_t *key, size_t key_len )
 {
-    unsigned char digest[EVP_MAX_MD_SIZE];
-    int ret = EINVAL;
-    RSA *rsa;
+    int ret = ENOMEM;
+    int rsa_rv = 0;
     BIO *keybio;
 
-    keybio = BIO_new_mem_buf( cjwt->header.key, cjwt->header.key_len );
-    if( !keybio ) {
-        return EINVAL;
-    }
-    rsa = PEM_read_bio_RSA_PUBKEY( keybio, NULL, NULL, NULL );
+    keybio = BIO_new_mem_buf( key, key_len );
+    if( keybio ) {
+        unsigned char digest[EVP_MAX_MD_SIZE];
+        RSA *rsa;
 
-    BIO_free( keybio );
+        ret = EINVAL;
 
-    if( !rsa ) {
-        cjwt_rsa_error();
-        cjwt_error( "key to rsa conversion failed\n" );
-        return EINVAL;
-    }
+        rsa = PEM_read_bio_RSA_PUBKEY( keybio, NULL, NULL, NULL );
 
-    switch( cjwt->header.alg ) {
-        case alg_rs256:
+        BIO_free( keybio );
+
+        if( !rsa ) {
+            cjwt_rsa_error();
+            cjwt_error( "key to rsa conversion failed\n" );
+            return EINVAL;
+        }
+
+        if( alg_rs256 == cjwt->header.alg ) {
             SHA256( in, len, digest );
-            ret = RSA_verify( NID_sha256, digest, SHA256_DIGEST_LENGTH, sig, sig_len, rsa );
-            break;
-        case alg_rs384:
+            rsa_rv = RSA_verify( NID_sha256, digest, SHA256_DIGEST_LENGTH, sig, sig_len, rsa );
+        } else if( alg_rs384 == cjwt->header.alg ) {
             SHA384( in, len, digest );
-            ret = RSA_verify( NID_sha384, digest, SHA384_DIGEST_LENGTH, sig, sig_len, rsa );
-            break;
-        case alg_rs512:
+            rsa_rv = RSA_verify( NID_sha384, digest, SHA384_DIGEST_LENGTH, sig, sig_len, rsa );
+        } else if( alg_rs512 == cjwt->header.alg ) {
             SHA512( in, len, digest );
-            ret = RSA_verify( NID_sha512, digest, SHA512_DIGEST_LENGTH, sig, sig_len, rsa );
-            break;
-        default:
-            break;
+            rsa_rv = RSA_verify( NID_sha512, digest, SHA512_DIGEST_LENGTH, sig, sig_len, rsa );
+        }
+
+        RSA_free( rsa );
     }
 
-    RSA_free( rsa );
-
-    if( ret ==  1 ) {
-        return 0;
+    if( rsa_rv ==  1 ) {
+        ret = 0;
     }
 
-    cjwt_rsa_error();
-    return EINVAL;
+    return ret;
 }
 
-static int cjwt_verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
-                                  const uint8_t *b64sig, int options )
+static int __verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
+                               const uint8_t *b64sig, int options,
+                               const uint8_t *key, size_t key_len )
 {
     int ret = EINVAL;
     size_t sig_len, b64sig_len;
@@ -338,41 +394,39 @@ static int cjwt_verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
         return EINVAL;
     }
 
-    if( (NULL == cjwt->header.key) || (cjwt->header.key_len < 1) || (!b64sig) ) {
+    if( (NULL == key) || (key_len < 1) || (!b64sig) ) {
         return EINVAL;
     }
 
     b64sig_len = strlen( (char*) b64sig );
 
-    sig = cjwt_base64_decode_blob( b64sig, b64sig_len, &sig_len );
+    sig = __base64_decode_blob( b64sig, b64sig_len, &sig_len );
     if( !sig ) {
         return EINVAL;
     }
 
-    if( 0 < sig_len ) {
-        switch( cjwt->header.alg ) {
-            // case alg_es256:
-            // case alg_es384:
-            // case alg_es512:
-            case alg_hs256:
-            case alg_hs384:
-            case alg_hs512:
-                ret = cjwt_verify_hs( cjwt, in, len, sig, sig_len );
-                break;
-            // case alg_ps256:
-            // case alg_ps384:
-            // case alg_ps512:
+    ret = ENOTSUP;
+    switch( cjwt->header.alg ) {
+        // case alg_es256:
+        // case alg_es384:
+        // case alg_es512:
+        case alg_hs256:
+        case alg_hs384:
+        case alg_hs512:
+            ret = __verify_hs( cjwt, in, len, sig, sig_len, key, key_len );
+            break;
+        // case alg_ps256:
+        // case alg_ps384:
+        // case alg_ps512:
 
-            case alg_rs256:
-            case alg_rs384:
-            case alg_rs512:
-                ret = cjwt_verify_rsa( cjwt, in, len, sig, sig_len );
-                break;
+        case alg_rs256:
+        case alg_rs384:
+        case alg_rs512:
+            ret = __verify_rsa( cjwt, in, len, sig, sig_len, key, key_len );
+            break;
 
-            default:
-                ret = ENOTSUP;
-                break;
-        }
+        default:
+            break;
     }
 
     free( sig );
@@ -381,7 +435,7 @@ static int cjwt_verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
 }
 
 /* You need to free what is returned or you'll have a leak.*/
-static uint8_t* cjwt_base64_decode_blob( const uint8_t *head, size_t len, size_t *out_len )
+static uint8_t* __base64_decode_blob( const uint8_t *head, size_t len, size_t *out_len )
 {
     uint8_t *buf;
     size_t buf_len;
@@ -409,15 +463,15 @@ static uint8_t* cjwt_base64_decode_blob( const uint8_t *head, size_t len, size_t
     return buf;
 }
 
-static int cjwt_decode_section( cjwt_t *cjwt, const uint8_t *blob, size_t len,
-                                int (*fn)(cjwt_t*,cJSON*) )
+static int __decode_section( cjwt_t *cjwt, const uint8_t *blob, size_t len,
+                             int (*fn)(cjwt_t*,cJSON*) )
 {
     uint8_t *text;
     int rv;
 
     rv = EINVAL;
 
-    text = cjwt_base64_decode_blob( blob, len, NULL );
+    text = __base64_decode_blob( blob, len, NULL );
     if( text ) {
         cJSON *tree;
 
@@ -435,15 +489,15 @@ static int cjwt_decode_section( cjwt_t *cjwt, const uint8_t *blob, size_t len,
     return rv;
 }
 
-static int cjwt_decode_header( cjwt_t *cjwt, cJSON *tree )
+static int __decode_header( cjwt_t *cjwt, cJSON *tree )
 {
     char *typ_str;
 
-    typ_str = __get_cjson_string( tree, "typ" );
+    typ_str = __get_cjson_string( tree, "typ", NULL );
     if( typ_str && !strcasecmp(typ_str, "jwt") ) {
         int alg;
 
-        alg = cjwt_alg_str_to_enum( __get_cjson_string(tree, "alg") );
+        alg = __alg_str_to_enum( __get_cjson_string(tree, "alg", NULL) );
         if( -1 == alg ) {
             return ENOTSUP;
         } else {
@@ -455,18 +509,18 @@ static int cjwt_decode_header( cjwt_t *cjwt, cJSON *tree )
     return EINVAL;
 }
 
-static int cjwt_decode_payload( cjwt_t *cjwt, cJSON *tree )
+static int __decode_payload( cjwt_t *cjwt, cJSON *tree )
 {
-    int rv;
+    int rv = 0;
 
-    cjwt->iss = __dup_cjson_string( tree, "iss" );
-    cjwt->sub = __dup_cjson_string( tree, "sub" );
-    cjwt->jti = __dup_cjson_string( tree, "jti" );
-    __get_numericdate( tree, "exp", &cjwt->exp );
-    __get_numericdate( tree, "nbf", &cjwt->nbf );
-    __get_numericdate( tree, "iat", &cjwt->iat );
+    cjwt->iss = __dup_cjson_string( tree, "iss", &rv );
+    cjwt->sub = __dup_cjson_string( tree, "sub", &rv );
+    cjwt->jti = __dup_cjson_string( tree, "jti", &rv );
+    __get_numericdate( tree, "exp", &cjwt->exp, &rv );
+    __get_numericdate( tree, "nbf", &cjwt->nbf, &rv );
+    __get_numericdate( tree, "iat", &cjwt->iat, &rv );
 
-    rv = __process_aud( cjwt, tree );
+    __process_aud( cjwt, tree, &rv );
 
     cJSON_DeleteItemFromObject( tree, "iss" );
     cJSON_DeleteItemFromObject( tree, "sub" );
@@ -478,31 +532,6 @@ static int cjwt_decode_payload( cjwt_t *cjwt, cJSON *tree )
 
     if( 0 < cJSON_GetArraySize(tree) ) {
         cjwt->private_claims = cJSON_Duplicate( tree, 1 );
-    }
-
-    return rv;
-}
-
-static cjwt_t* cjwt_create( const uint8_t *key, size_t key_len )
-{
-    cjwt_t *rv;
-
-    rv = (cjwt_t*) malloc( sizeof(cjwt_t) );
-
-    if( rv ) {
-        memset( rv, 0, sizeof(cjwt_t) );
-        rv->header.alg = alg_none;
-
-        if( key && key_len ) {
-            rv->header.key = (uint8_t*) malloc( key_len * sizeof(uint8_t) );
-            if( rv->header.key ) {
-                memcpy( rv->header.key, key, key_len );
-                rv->header.key_len = key_len;
-            } else {
-                free( rv );
-                rv = NULL;
-            }
-        }
     }
 
     return rv;
@@ -520,7 +549,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     size_t header_len, payload_len, validation_len;
 
     //validate inputs
-    if( !encoded || !jwt ) {
+    if( !encoded ) {
         cjwt_error( "null parameter\n" );
         return EINVAL;
     }
@@ -543,27 +572,30 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     validation_len = signature - encoded;
     signature++;
 
-    out = cjwt_create( key, key_len );
-    if( !out ) {
-        return ENOMEM;
-    }
+    ret = ENOMEM;
+    out = (cjwt_t*) malloc( sizeof(cjwt_t) );
+    if( out ) {
+        memset( out, 0, sizeof(cjwt_t) );
 
-    //parse header
-    ret = cjwt_decode_section( out, (const uint8_t*) encoded, header_len, cjwt_decode_header );
-    if( !ret ) {
-        ret = cjwt_verify_signature( out, (const uint8_t*) encoded, validation_len, (const uint8_t*) signature, options );
+        //parse header
+        ret = __decode_section( out, (const uint8_t*) encoded, header_len, __decode_header );
         if( !ret ) {
-            //parse payload
-            ret = cjwt_decode_section( out, (const uint8_t*) payload, payload_len, cjwt_decode_payload );
+            ret = __verify_signature( out, (const uint8_t*) encoded, validation_len, (const uint8_t*) signature, options, key, key_len );
             if( !ret ) {
-                *jwt = out;
-                out = NULL;
+                //parse payload
+                ret = __decode_section( out, (const uint8_t*) payload, payload_len, __decode_payload );
+                if( !ret ) {
+                    if( jwt ) {
+                        *jwt = out;
+                        out = NULL;
+                    }
+                }
             }
         }
-    }
 
-    if( NULL != out ) {
-        cjwt_destroy( &out );
+        if( NULL != out ) {
+            cjwt_destroy( &out );
+        }
     }
 
     return ret;
@@ -577,9 +609,6 @@ int cjwt_destroy( cjwt_t **jwt )
     cjwt_t *p = *jwt;
 
     if( p ) {
-        if( p->header.key ) {
-            free( p->header.key );
-        }
         if( p->iss ) {
             free( p->iss );
         }
@@ -592,18 +621,15 @@ int cjwt_destroy( cjwt_t **jwt )
         if( p->private_claims ) {
             cJSON_Delete( p->private_claims );
         }
-        if( p->aud ) {
-            int i;
+        if( p->aud_names ) {
+            size_t i;
 
-            if( p->aud->names ) {
-                for( i = 0; i < p->aud->count; i++ ) {
-                    if( p->aud->names[i] ) {
-                        free( p->aud->names[i] );
+            for( i = 0; i < p->aud_count; i++ ) {
+                    if( p->aud_names[i] ) {
+                        free( p->aud_names[i] );
                     }
                 }
-                free( p->aud->names );
-            }
-            free( p->aud );
+                free( p->aud_names );
         }
         free( p );
     }

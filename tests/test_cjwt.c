@@ -107,7 +107,19 @@ test_case_t test_list[] = {
     {  EINVAL, "jwt5x_no_sig.txt",  true,  "",                  "RS384 no key"              },
     {  EINVAL, "jwt5x_no_sig.txt",  true,  "",                  "RS384 no key"              },
     {  EINVAL, "jwt5x_no_sig.txt",  false, "invalid",           "RS384 invalid key"         },
+    {  EINVAL, "jwt5x_ws_sig.txt",  false, "invalid",           "RS384 invalid key"         },
     {       0, "invalid_1.txt",     false, "invalid",           "Double issued key"         },
+    {  EINVAL, "jwt_inv_aud.txt",   false, "secret",            "aud with mixed types"      },
+    {  EINVAL, "jwt_inv_aud2.txt",  false, "secret",            "aud with wrong types"      },
+    {  EINVAL, "bad_iss.txt",       false, "secret",            "iss with wrong type"       },
+    {  EINVAL, "bad_sub.txt",       false, "secret",            "sub with wrong type"       },
+    {  EINVAL, "bad_jti.txt",       false, "secret",            "jti with wrong type"       },
+    {  EINVAL, "bad_exp.txt",       false, "secret",            "exp with wrong type"       },
+    {  EINVAL, "bad_nbf.txt",       false, "secret",            "nbf with wrong type"       },
+    {  EINVAL, "bad_iat.txt",       false, "secret",            "iat with wrong type"       },
+    {  EINVAL, "bad_aud.txt",       false, "secret",            "aud with wrong type"       },
+    {  EINVAL, "bad_payload.txt",   false, "secret",            "a bad payload"             },
+    { ENOTSUP, "bad_es256.txt",     false, "secret",            "a bad es256 jwt"           },
 	{ ENOTSUP, "jwtbadalg.txt",     false, "incorrect_key",     "Invalid/unsupported alg."  }
 };
 
@@ -169,7 +181,6 @@ void test_case (unsigned _i )
     int key_len;
     ssize_t jwt_bytes;
     int result = 0;
-    cjwt_t *jwt = NULL;
     char jwt_buf[65535];
     char pem_buf[8192];
     jwt_fname = test_list[_i].jwt_file_name;
@@ -196,7 +207,7 @@ void test_case (unsigned _i )
     jwt_bytes = read_file( jwt_fname, jwt_buf, sizeof( jwt_buf ) );
 
     if( jwt_bytes > 0 ) {
-        result = cjwt_decode( jwt_buf, OPT_ALLOW_ALG_NONE|OPT_ALLOW_ALG_NONE_IGNORE_SIG, &jwt, ( const uint8_t * )key_str, key_len );
+        result = cjwt_decode( jwt_buf, OPT_ALLOW_ALG_NONE|OPT_ALLOW_ALG_NONE_IGNORE_SIG, NULL, ( const uint8_t * )key_str, key_len );
     } else {
         result = jwt_bytes;
     }
@@ -212,10 +223,9 @@ void test_case (unsigned _i )
 
         printf( "--- Input jwt : %s \n", jwt_fname );
         printf( "\e[01;31m--- FAILED: %s (%d != %d)\e[00m\n", decode_test_name, expected, result );
-    }
 
-    if( NULL != jwt ) {
-        cjwt_destroy( &jwt );
+        /* Run again to make debugging simpler. */
+        cjwt_decode( jwt_buf, OPT_ALLOW_ALG_NONE|OPT_ALLOW_ALG_NONE_IGNORE_SIG, NULL, ( const uint8_t * )key_str, key_len );
     }
 
     CU_ASSERT ( expected == result );
@@ -252,9 +262,8 @@ void simple_jwt( void )
     CU_ASSERT( 124 == got->iat.tv_sec  );
     CU_ASSERT(   0 == got->iat.tv_nsec );
 
-    CU_ASSERT_FATAL( NULL != got->aud );
-    CU_ASSERT( 1 == got->aud->count );
-    CU_ASSERT_STRING_EQUAL( "single", got->aud->names[0] );
+    CU_ASSERT( 1 == got->aud_count );
+    CU_ASSERT_STRING_EQUAL( "single", got->aud_names[0] );
 
     cjwt_destroy( &got );
 }
@@ -282,12 +291,76 @@ void simple_array_jwt( void )
     CU_ASSERT( 124 == got->iat.tv_sec  );
     CU_ASSERT(   0 == got->iat.tv_nsec );
 
-    CU_ASSERT_FATAL( NULL != got->aud );
-    CU_ASSERT( 2 == got->aud->count );
-    CU_ASSERT_STRING_EQUAL( "one", got->aud->names[0] );
-    CU_ASSERT_STRING_EQUAL( "two", got->aud->names[1] );
+    CU_ASSERT( 2 == got->aud_count );
+    CU_ASSERT_STRING_EQUAL( "one", got->aud_names[0] );
+    CU_ASSERT_STRING_EQUAL( "two", got->aud_names[1] );
 
     cjwt_destroy( &got );
+}
+
+void alg_none_jwt( void )
+{
+    const char *jwt_none_no_sig = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzZXJ2aWNlMiI6Ik9uIiwic2VydmljZTEiOiJPbiJ9.";
+    const char *jwt_none_dirty  = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzZXJ2aWNlMiI6Ik9uIiwic2VydmljZTEiOiJPbiJ9.invalidsig";
+    int result;
+
+    /* test out the combinations of trailing signatures */
+    result = cjwt_decode( jwt_none_dirty, 0, NULL, NULL, 0 );
+    CU_ASSERT( EINVAL == result );
+
+    result = cjwt_decode( jwt_none_dirty, OPT_ALLOW_ALG_NONE, NULL, NULL, 0 );
+    CU_ASSERT( EINVAL == result );
+
+    result = cjwt_decode( jwt_none_dirty,
+                          (OPT_ALLOW_ALG_NONE | OPT_ALLOW_ALG_NONE_IGNORE_SIG),
+                          NULL, NULL, 0 );
+    CU_ASSERT( 0 == result );
+
+    result = cjwt_decode( jwt_none_dirty,
+                          (OPT_ALLOW_ALG_NONE_IGNORE_SIG),
+                          NULL, NULL, 0 );
+    CU_ASSERT( EINVAL == result );
+
+    /* test out the combinations of no trailing signatures */
+    result = cjwt_decode( jwt_none_no_sig, 0, NULL, NULL, 0 );
+    CU_ASSERT( result == EINVAL );
+
+    result = cjwt_decode( jwt_none_no_sig, OPT_ALLOW_ALG_NONE, NULL, NULL, 0 );
+    CU_ASSERT( 0 == result );
+
+    result = cjwt_decode( jwt_none_no_sig,
+                          (OPT_ALLOW_ALG_NONE | OPT_ALLOW_ALG_NONE_IGNORE_SIG),
+                          NULL, NULL, 0 );
+    CU_ASSERT( 0 == result );
+
+    result = cjwt_decode( jwt_none_no_sig,
+                          (OPT_ALLOW_ALG_NONE_IGNORE_SIG),
+                          NULL, NULL, 0 );
+    CU_ASSERT( EINVAL == result );
+
+}
+
+void edge_cases( void )
+{
+    const char *jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhbHBoYSIsInN1YiI6ImJldGEiLCJqdGkiOiJnYW1tYSIsImV4cCI6MTIzNDUuMywibmJmIjoxMjMsImlhdCI6MTI0LjksImF1ZCI6WyJvbmUiLCJ0d28iXX0.MNhlfkWsAaiZSZF6VIpsMhzPDZrRLQ9x5Ywl08TZoVg";
+    const char *pw = "testing";
+    int result;
+
+    /* Nothing passed in */
+    result = cjwt_decode( NULL, 0, NULL, NULL, 0 );
+    CU_ASSERT( EINVAL == result );
+
+    /* No keys passed */
+    result = cjwt_decode( jwt, 0, NULL, NULL, 0 );
+    CU_ASSERT( EINVAL == result );
+
+    /* No keys passed, but fake the length */
+    result = cjwt_decode( jwt, 0, NULL, NULL, 99 );
+    CU_ASSERT( EINVAL == result );
+
+    /* Key passed, but no length */
+    result = cjwt_decode( jwt, 0, NULL, (const uint8_t *)pw, 0 );
+    CU_ASSERT( EINVAL == result );
 }
 
 
@@ -299,6 +372,8 @@ void add_suites( CU_pSuite *suite )
     CU_add_test( *suite, "Basic Decoding Tests", test_cjwt );
     CU_add_test( *suite, "Validate a simple jwt with aud", simple_jwt );
     CU_add_test( *suite, "Validate a simple jwt with aud array", simple_array_jwt );
+    CU_add_test( *suite, "Validate alg=none behaviors", alg_none_jwt );
+    CU_add_test( *suite, "Edge cases", edge_cases );
 }
 
 /*----------------------------------------------------------------------------*/
