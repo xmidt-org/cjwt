@@ -110,7 +110,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
                  const uint8_t *key, size_t key_len );
 
 /**
- *  The function to free cjwt object
+ *  The function to free cjwt object.
  *
  *  @note Cleanup funtion for corresponding cjwt
  *

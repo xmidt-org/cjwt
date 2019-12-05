@@ -53,8 +53,6 @@
 
 #endif
 
-#define IS_RSA_ALG(alg) ((alg) > alg_ps512)
-
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
@@ -80,24 +78,21 @@
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-static char *__get_cjson_string( cJSON *obj, const char *key, int *err );
-static void __get_numericdate( cJSON *obj, const char *key, struct timespec *t, int *err );
-static char *__dup_cjson_string( cJSON *obj, const char *key, int *err );
-static void __process_aud( cjwt_t *cjwt, cJSON *obj, int *err );
-static int __verify_hs( cjwt_t *cjwt, const uint8_t *in, size_t len,
-                        const uint8_t *sig, size_t sig_len,
-                        const uint8_t *key, size_t key_len );
-static int __verify_rsa( cjwt_t *cjwt, const uint8_t *in, size_t len,
-                         const uint8_t *sig, size_t sig_len,
-                         const uint8_t *key, size_t key_len );
-static int __verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
-                               const uint8_t *b64sig, int options,
-                               const uint8_t *key, size_t key_len );
-static uint8_t* __base64_decode_blob( const uint8_t *head, size_t len, size_t *out_len );
-static int __decode_section( cjwt_t *cjwt, const uint8_t *blob, size_t len,
+static char *__get_cjson_string( cJSON*, const char*, int* );
+static void __get_numericdate( cJSON*, const char*, struct timespec*, int* );
+static char *__dup_cjson_string( cJSON*, const char*, int* );
+static void __process_aud( cjwt_t*, cJSON*, int* );
+static int __verify_hs( cjwt_alg_t, const uint8_t*, size_t, const uint8_t*,
+                        size_t, const uint8_t*, size_t );
+static int __verify_rsa( cjwt_alg_t, const uint8_t*, size_t, const uint8_t*,
+                         size_t, const uint8_t*, size_t );
+static int __verify_signature( cjwt_alg_t, const uint8_t *, size_t,
+                               const uint8_t*, int, const uint8_t*, size_t );
+static uint8_t* __base64_decode_blob( const uint8_t*, size_t, size_t* );
+static int __decode_section( cjwt_t*, const uint8_t*, size_t,
                              int (*fn)(cjwt_t*,cJSON*) );
-static int __decode_header( cjwt_t *cjwt, cJSON *tree );
-static int __decode_payload( cjwt_t *cjwt, cJSON *tree );
+static int __decode_header( cjwt_t*, cJSON* );
+static int __decode_payload( cjwt_t*, cJSON* );
 
 
 /**
@@ -141,7 +136,8 @@ static char *__get_cjson_string( cJSON *obj, const char *key, int *err )
  *  @param t    the timespec to populate (MUST NOT BE NULL)
  *  @param err  where the error code is written ONLY if there is an error
  */
-static void __get_numericdate( cJSON *obj, const char *key, struct timespec *t, int *err )
+static void __get_numericdate( cJSON *obj, const char *key, struct timespec *t,
+                               int *err )
 {
     if( obj ) {
         cJSON *value;
@@ -261,6 +257,7 @@ done:
     }
 }
 
+
 /**
  *  Convert the 'alg' string into an enumeration.
  *
@@ -304,7 +301,20 @@ static int __alg_str_to_enum( const char *alg_str )
 }
 
 
-static int __verify_hs( cjwt_t *cjwt, const uint8_t *in, size_t len,
+/**
+ *  This function verifies the HMAC based signing algorithms.
+ *
+ *  @param alg     where to write the data
+ *  @param in      the data bytes to verify
+ *  @param len     the length of the data
+ *  @param sig     the signature bytes
+ *  @param sig_len the length of the data
+ *  @param key     the key bytes
+ *  @param key_len the length of the key
+ *
+ *  @return 0 if successful, EINVAL or ENOMEM on error
+ */
+static int __verify_hs( cjwt_alg_t alg, const uint8_t *in, size_t len,
                         const uint8_t *sig, size_t sig_len,
                         const uint8_t *key, size_t key_len )
 {
@@ -312,22 +322,39 @@ static int __verify_hs( cjwt_t *cjwt, const uint8_t *in, size_t len,
     unsigned int result_len;
 
     result_len = !sig_len;
-    if( alg_hs256 == cjwt->header.alg ) {
+
+    if( alg_hs256 == alg ) {
         HMAC( EVP_sha256(), key, key_len, in, len, result, &result_len );
-    } else if( alg_hs384 == cjwt->header.alg ) {
+    } else if( alg_hs384 == alg ) {
         HMAC( EVP_sha384(), key, key_len, in, len, result, &result_len );
-    } else if( alg_hs512 == cjwt->header.alg ) {
+    } else if( alg_hs512 == alg ) {
         HMAC( EVP_sha512(), key, key_len, in, len, result, &result_len );
     }
 
-    if( (result_len != sig_len) || (0 != CRYPTO_memcmp(result, sig, sig_len)) ) {
+    if( (result_len != sig_len) ||
+        (0 != CRYPTO_memcmp(result, sig, sig_len)) )
+    {
         return EINVAL;
     }
 
     return 0;
 }
 
-static int __verify_rsa( cjwt_t *cjwt, const uint8_t *in, size_t len,
+
+/**
+ *  This function verifies the RSA based signing algorithms.
+ *
+ *  @param alg     where to write the data
+ *  @param in      the data bytes to verify
+ *  @param len     the length of the data
+ *  @param sig     the signature bytes
+ *  @param sig_len the length of the data
+ *  @param key     the key bytes
+ *  @param key_len the length of the key
+ *
+ *  @return 0 if successful, EINVAL or ENOMEM on error
+ */
+static int __verify_rsa( cjwt_alg_t alg, const uint8_t *in, size_t len,
                          const uint8_t *sig, size_t sig_len,
                          const uint8_t *key, size_t key_len )
 {
@@ -352,15 +379,18 @@ static int __verify_rsa( cjwt_t *cjwt, const uint8_t *in, size_t len,
             return EINVAL;
         }
 
-        if( alg_rs256 == cjwt->header.alg ) {
+        if( alg_rs256 == alg ) {
             SHA256( in, len, digest );
-            rsa_rv = RSA_verify( NID_sha256, digest, SHA256_DIGEST_LENGTH, sig, sig_len, rsa );
-        } else if( alg_rs384 == cjwt->header.alg ) {
+            rsa_rv = RSA_verify( NID_sha256, digest, SHA256_DIGEST_LENGTH,
+                                 sig, sig_len, rsa );
+        } else if( alg_rs384 == alg ) {
             SHA384( in, len, digest );
-            rsa_rv = RSA_verify( NID_sha384, digest, SHA384_DIGEST_LENGTH, sig, sig_len, rsa );
-        } else if( alg_rs512 == cjwt->header.alg ) {
+            rsa_rv = RSA_verify( NID_sha384, digest, SHA384_DIGEST_LENGTH,
+                                 sig, sig_len, rsa );
+        } else if( alg_rs512 == alg ) {
             SHA512( in, len, digest );
-            rsa_rv = RSA_verify( NID_sha512, digest, SHA512_DIGEST_LENGTH, sig, sig_len, rsa );
+            rsa_rv = RSA_verify( NID_sha512, digest, SHA512_DIGEST_LENGTH,
+                                 sig, sig_len, rsa );
         }
 
         RSA_free( rsa );
@@ -373,7 +403,21 @@ static int __verify_rsa( cjwt_t *cjwt, const uint8_t *in, size_t len,
     return ret;
 }
 
-static int __verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
+
+/**
+ *  This function handles the verification of the signature and data integrity.
+ *
+ *  @param alg     where to write the data
+ *  @param in      the data bytes to verify
+ *  @param len     the length of the data
+ *  @param b64sig  the base64 encoded signature bytes
+ *  @param options the options to apply
+ *  @param key     the key bytes
+ *  @param key_len the length of the key
+ *
+ *  @return 0 if successful, EINVAL or ENOMEM on error
+ */
+static int __verify_signature( cjwt_alg_t alg, const uint8_t *in, size_t len,
                                const uint8_t *b64sig, int options,
                                const uint8_t *key, size_t key_len )
 {
@@ -381,7 +425,7 @@ static int __verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
     size_t sig_len, b64sig_len;
     uint8_t *sig;
 
-    if( alg_none == cjwt->header.alg ) {
+    if( alg_none == alg ) {
         if( 0 != (OPT_ALLOW_ALG_NONE & options) ) {
             if( '\0' == *b64sig ) {
                 /* Only allow none if there is no signature. */
@@ -406,14 +450,14 @@ static int __verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
     }
 
     ret = ENOTSUP;
-    switch( cjwt->header.alg ) {
+    switch( alg ) {
         // case alg_es256:
         // case alg_es384:
         // case alg_es512:
         case alg_hs256:
         case alg_hs384:
         case alg_hs512:
-            ret = __verify_hs( cjwt, in, len, sig, sig_len, key, key_len );
+            ret = __verify_hs( alg, in, len, sig, sig_len, key, key_len );
             break;
         // case alg_ps256:
         // case alg_ps384:
@@ -422,7 +466,7 @@ static int __verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
         case alg_rs256:
         case alg_rs384:
         case alg_rs512:
-            ret = __verify_rsa( cjwt, in, len, sig, sig_len, key, key_len );
+            ret = __verify_rsa( alg, in, len, sig, sig_len, key, key_len );
             break;
 
         default:
@@ -434,8 +478,19 @@ static int __verify_signature( cjwt_t *cjwt, const uint8_t *in, size_t len,
     return ret;
 }
 
-/* You need to free what is returned or you'll have a leak.*/
-static uint8_t* __base64_decode_blob( const uint8_t *head, size_t len, size_t *out_len )
+/**
+ *  Decode a base64 blob and return the buffer with the bytes.
+ *
+ *  Note: You need to free what is returned or you'll have a leak.
+ *
+ *  @param in       the base64 encoded buffer to decode
+ *  @param len      the length of the buffer
+ *  @param out_len  the length of the decoded buffer
+ *
+ *  @return the decoded buffer on success or NULL on error
+ */
+static uint8_t* __base64_decode_blob( const uint8_t *in, size_t len,
+                                      size_t *out_len )
 {
     uint8_t *buf;
     size_t buf_len;
@@ -447,7 +502,7 @@ static uint8_t* __base64_decode_blob( const uint8_t *head, size_t len, size_t *o
         if( buf ) {
             int raw_len;
 
-            raw_len = b64url_decode( (uint8_t*) head, len, buf );
+            raw_len = b64url_decode( in, len, buf );
             if( 0 < raw_len ) {
                 buf[raw_len] = '\0';
                 if( out_len ) {
@@ -463,6 +518,18 @@ static uint8_t* __base64_decode_blob( const uint8_t *head, size_t len, size_t *o
     return buf;
 }
 
+
+/**
+ *  This function base64 decodes a blob, runs it into the JSON parser, then
+ *  calls the provided function to do something with the data.
+ *
+ *  @param cjwt the jwt to fill in
+ *  @param blob the base64 encoded blob to process
+ *  @param len  the length of the base64 blob
+ *  @param fn   the function to call to process the decoded data
+ *
+ *  @return 0 on success, error otherwise
+ */
 static int __decode_section( cjwt_t *cjwt, const uint8_t *blob, size_t len,
                              int (*fn)(cjwt_t*,cJSON*) )
 {
@@ -489,6 +556,15 @@ static int __decode_section( cjwt_t *cjwt, const uint8_t *blob, size_t len,
     return rv;
 }
 
+
+/**
+ *  This function process the header part of a JWT.
+ *
+ *  @param cjwt the jwt to fill in
+ *  @param tree the JSON document to process
+ *
+ *  @return 0 on success, error otherwise
+ */
 static int __decode_header( cjwt_t *cjwt, cJSON *tree )
 {
     char *typ_str;
@@ -509,6 +585,17 @@ static int __decode_header( cjwt_t *cjwt, cJSON *tree )
     return EINVAL;
 }
 
+
+/**
+ *  This function process the payload part of a JWT.  All public claim types
+ *  are validated.  This function must not silently fail or the jwt struct
+ *  may be only a partial representation of the actual JWT.
+ *
+ *  @param cjwt the jwt to fill in
+ *  @param tree the JSON document to process
+ *
+ *  @return 0 on success, error otherwise
+ */
 static int __decode_payload( cjwt_t *cjwt, cJSON *tree )
 {
     int rv = 0;
@@ -580,7 +667,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
         //parse header
         ret = __decode_section( out, (const uint8_t*) encoded, header_len, __decode_header );
         if( !ret ) {
-            ret = __verify_signature( out, (const uint8_t*) encoded, validation_len, (const uint8_t*) signature, options, key, key_len );
+            ret = __verify_signature( out->header.alg, (const uint8_t*) encoded, validation_len, (const uint8_t*) signature, options, key, key_len );
             if( !ret ) {
                 //parse payload
                 ret = __decode_section( out, (const uint8_t*) payload, payload_len, __decode_payload );
