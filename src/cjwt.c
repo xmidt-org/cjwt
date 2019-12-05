@@ -367,7 +367,7 @@ static int __verify_rsa( cjwt_alg_t alg, const uint8_t *in, size_t len,
     if( tmp_key ) {
         memcpy( tmp_key, key, key_len );
 
-        keybio = BIO_new_mem_buf( key, key_len );
+        keybio = BIO_new_mem_buf( tmp_key, key_len );
         if( keybio ) {
             unsigned char digest[EVP_MAX_MD_SIZE];
             RSA *rsa;
