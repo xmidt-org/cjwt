@@ -361,39 +361,47 @@ static int __verify_rsa( cjwt_alg_t alg, const uint8_t *in, size_t len,
     int ret = ENOMEM;
     int rsa_rv = 0;
     BIO *keybio;
+    uint8_t *tmp_key;
 
-    keybio = BIO_new_mem_buf( key, key_len );
-    if( keybio ) {
-        unsigned char digest[EVP_MAX_MD_SIZE];
-        RSA *rsa;
+    tmp_key = (uint8_t*) malloc( sizeof(uint8_t) * key_len );
+    if( tmp_key ) {
+        memcpy( tmp_key, key, key_len );
 
-        ret = EINVAL;
+        keybio = BIO_new_mem_buf( key, key_len );
+        if( keybio ) {
+            unsigned char digest[EVP_MAX_MD_SIZE];
+            RSA *rsa;
 
-        rsa = PEM_read_bio_RSA_PUBKEY( keybio, NULL, NULL, NULL );
+            ret = EINVAL;
 
-        BIO_free( keybio );
+            rsa = PEM_read_bio_RSA_PUBKEY( keybio, NULL, NULL, NULL );
 
-        if( !rsa ) {
-            cjwt_rsa_error();
-            cjwt_error( "key to rsa conversion failed\n" );
-            return EINVAL;
+            BIO_free( keybio );
+
+            if( !rsa ) {
+                cjwt_rsa_error();
+                free( tmp_key );
+                cjwt_error( "key to rsa conversion failed\n" );
+                return EINVAL;
+            }
+
+            if( alg_rs256 == alg ) {
+                SHA256( in, len, digest );
+                rsa_rv = RSA_verify( NID_sha256, digest, SHA256_DIGEST_LENGTH,
+                                     sig, sig_len, rsa );
+            } else if( alg_rs384 == alg ) {
+                SHA384( in, len, digest );
+                rsa_rv = RSA_verify( NID_sha384, digest, SHA384_DIGEST_LENGTH,
+                                     sig, sig_len, rsa );
+            } else if( alg_rs512 == alg ) {
+                SHA512( in, len, digest );
+                rsa_rv = RSA_verify( NID_sha512, digest, SHA512_DIGEST_LENGTH,
+                                     sig, sig_len, rsa );
+            }
+
+            RSA_free( rsa );
         }
-
-        if( alg_rs256 == alg ) {
-            SHA256( in, len, digest );
-            rsa_rv = RSA_verify( NID_sha256, digest, SHA256_DIGEST_LENGTH,
-                                 sig, sig_len, rsa );
-        } else if( alg_rs384 == alg ) {
-            SHA384( in, len, digest );
-            rsa_rv = RSA_verify( NID_sha384, digest, SHA384_DIGEST_LENGTH,
-                                 sig, sig_len, rsa );
-        } else if( alg_rs512 == alg ) {
-            SHA512( in, len, digest );
-            rsa_rv = RSA_verify( NID_sha512, digest, SHA512_DIGEST_LENGTH,
-                                 sig, sig_len, rsa );
-        }
-
-        RSA_free( rsa );
+        free( tmp_key );
     }
 
     if( rsa_rv ==  1 ) {
