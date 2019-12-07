@@ -79,7 +79,7 @@
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 static char *__get_cjson_string( cJSON*, const char*, int* );
-static void __get_numericdate( cJSON*, const char*, struct timespec*, int* );
+static struct timespec* __get_numericdate( cJSON *, const char *, int * );
 static char *__dup_cjson_string( cJSON*, const char*, int* );
 static void __process_aud( cjwt_t*, cJSON*, int* );
 static int __verify_hs( cjwt_alg_t, const uint8_t*, size_t, const uint8_t*,
@@ -93,6 +93,8 @@ static int __decode_section( cjwt_t*, const uint8_t*, size_t,
                              int (*fn)(cjwt_t*,cJSON*) );
 static int __decode_header( cjwt_t*, cJSON* );
 static int __decode_payload( cjwt_t*, cJSON* );
+static int __enforce_time_window( cjwt_t *cjwt, int options,
+                                  time_t now, time_t skew );
 
 
 /**
@@ -136,24 +138,36 @@ static char *__get_cjson_string( cJSON *obj, const char *key, int *err )
  *  @param t    the timespec to populate (MUST NOT BE NULL)
  *  @param err  where the error code is written ONLY if there is an error
  */
-static void __get_numericdate( cJSON *obj, const char *key, struct timespec *t,
-                               int *err )
+static struct timespec* __get_numericdate( cJSON *obj, const char *key, int *err )
 {
+    struct timespec *t = NULL;
+    int error = 0;
+
     if( obj ) {
         cJSON *value;
 
         value = cJSON_GetObjectItem( obj, key );
         if( value ) {
+            error = EINVAL;
             if( cJSON_Number == value->type ) {
-                t->tv_sec = value->valueint;
-                t->tv_nsec = 0;
-            } else {
-                if( err ) {
-                    *err = EINVAL;
+                error = ENOMEM;
+                t = (struct timespec*) malloc( sizeof(struct timespec) );
+                if( t ) {
+                    memset( t, 0, sizeof(struct timespec) );
+                    t->tv_sec = value->valueint;
+                    t->tv_nsec = 0;
+
+                    error = 0;
                 }
             }
         }
     }
+
+    if( err && error ) {
+        *err = error;
+    }
+
+    return t;
 }
 
 
@@ -611,9 +625,9 @@ static int __decode_payload( cjwt_t *cjwt, cJSON *tree )
     cjwt->iss = __dup_cjson_string( tree, "iss", &rv );
     cjwt->sub = __dup_cjson_string( tree, "sub", &rv );
     cjwt->jti = __dup_cjson_string( tree, "jti", &rv );
-    __get_numericdate( tree, "exp", &cjwt->exp, &rv );
-    __get_numericdate( tree, "nbf", &cjwt->nbf, &rv );
-    __get_numericdate( tree, "iat", &cjwt->iat, &rv );
+    cjwt->exp = __get_numericdate( tree, "exp", &rv );
+    cjwt->nbf = __get_numericdate( tree, "nbf", &rv );
+    cjwt->iat = __get_numericdate( tree, "iat", &rv );
 
     __process_aud( cjwt, tree, &rv );
 
@@ -632,11 +646,39 @@ static int __decode_payload( cjwt_t *cjwt, cJSON *tree )
     return rv;
 }
 
+static int __enforce_time_window( cjwt_t *cjwt, int options,
+                                  time_t now, time_t skew )
+{
+    time_t adjusted;
+
+    if( now < 0 || skew < 0 || 
+        (cjwt->exp && cjwt->nbf && cjwt->exp->tv_sec < cjwt->nbf->tv_sec) )
+    {
+        return EINVAL;
+    }
+
+    if( (cjwt->exp) && (0 == (OPT_ALLOW_ANY_TIME & options)) ) {
+        adjusted = cjwt->nbf->tv_sec - skew;
+        if( adjusted < 0 || now < adjusted ) {
+            return ETIME;
+        }
+    }
+
+    if( (cjwt->nbf) && (0 == (OPT_ALLOW_ANY_TIME & options)) ) {
+        adjusted = cjwt->exp->tv_sec + skew;
+        if( adjusted < 0 || adjusted <= now ) {
+            return ETIME;
+        }
+    }
+
+    return 0;
+}
+
 /**
  * validates jwt token and extracts data
  */
 int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
-                 const uint8_t *key, size_t key_len )
+                 const uint8_t *key, size_t key_len, time_t now, time_t skew )
 {
     cjwt_t *out;
     int ret = 0;
@@ -684,9 +726,12 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
                 ret = __decode_section( out, (const uint8_t*) payload,
                                         payload_len, __decode_payload );
                 if( !ret ) {
-                    if( jwt ) {
-                        *jwt = out;
-                        out = NULL;
+                    ret = __enforce_time_window( out, options, now, skew );
+                    if( !ret ) {
+                        if( jwt ) {
+                            *jwt = out;
+                            out = NULL;
+                        }
                     }
                 }
             }
@@ -716,6 +761,15 @@ int cjwt_destroy( cjwt_t **jwt )
         }
         if( p->jti ) {
             free( p->jti );
+        }
+        if( p->exp ) {
+            free( p->exp );
+        }
+        if( p->nbf ) {
+            free( p->nbf );
+        }
+        if( p->iat ) {
+            free( p->iat );
         }
         if( p->private_claims ) {
             cJSON_Delete( p->private_claims );

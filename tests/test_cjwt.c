@@ -207,7 +207,11 @@ void test_case (unsigned _i )
     jwt_bytes = read_file( jwt_fname, jwt_buf, sizeof( jwt_buf ) );
 
     if( jwt_bytes > 0 ) {
-        result = cjwt_decode( jwt_buf, OPT_ALLOW_ALG_NONE|OPT_ALLOW_ALG_NONE_IGNORE_SIG, NULL, ( const uint8_t * )key_str, key_len );
+        result = cjwt_decode( jwt_buf,
+                              OPT_ALLOW_ALG_NONE |
+                              OPT_ALLOW_ALG_NONE_IGNORE_SIG |
+                              OPT_ALLOW_ANY_TIME,
+                              NULL, ( const uint8_t * )key_str, key_len, 0, 0 );
     } else {
         result = jwt_bytes;
     }
@@ -225,7 +229,11 @@ void test_case (unsigned _i )
         printf( "\e[01;31m--- FAILED: %s (%d != %d)\e[00m\n", decode_test_name, expected, result );
 
         /* Run again to make debugging simpler. */
-        cjwt_decode( jwt_buf, OPT_ALLOW_ALG_NONE|OPT_ALLOW_ALG_NONE_IGNORE_SIG, NULL, ( const uint8_t * )key_str, key_len );
+        cjwt_decode( jwt_buf,
+                     OPT_ALLOW_ALG_NONE |
+                     OPT_ALLOW_ALG_NONE_IGNORE_SIG |
+                     OPT_ALLOW_ANY_TIME,
+                     NULL, ( const uint8_t * )key_str, key_len, 0, 0 );
     }
 
     CU_ASSERT ( expected == result );
@@ -246,21 +254,21 @@ void simple_jwt( void )
     int result;
     cjwt_t *got;
 
-    result = cjwt_decode( jwt, 0, &got, (const uint8_t *)pw, strlen(pw) );
+    result = cjwt_decode( jwt, 0, &got, (const uint8_t *)pw, strlen(pw), 1000, 100 );
     CU_ASSERT( 0 == result );
 
     CU_ASSERT_STRING_EQUAL( "example-issuer", got->iss );
     CU_ASSERT_STRING_EQUAL( "example-sub",    got->sub );
     CU_ASSERT_STRING_EQUAL( "example-jti",    got->jti );
 
-    CU_ASSERT( 12345 == got->exp.tv_sec  );
-    CU_ASSERT(     0 == got->exp.tv_nsec );
+    CU_ASSERT( 12345 == got->exp->tv_sec  );
+    CU_ASSERT(     0 == got->exp->tv_nsec );
 
-    CU_ASSERT( 123 == got->nbf.tv_sec  );
-    CU_ASSERT(   0 == got->nbf.tv_nsec );
+    CU_ASSERT( 123 == got->nbf->tv_sec  );
+    CU_ASSERT(   0 == got->nbf->tv_nsec );
 
-    CU_ASSERT( 124 == got->iat.tv_sec  );
-    CU_ASSERT(   0 == got->iat.tv_nsec );
+    CU_ASSERT( 124 == got->iat->tv_sec  );
+    CU_ASSERT(   0 == got->iat->tv_nsec );
 
     CU_ASSERT( 1 == got->aud_count );
     CU_ASSERT_STRING_EQUAL( "single", got->aud_names[0] );
@@ -275,21 +283,21 @@ void simple_array_jwt( void )
     int result;
     cjwt_t *got;
 
-    result = cjwt_decode( jwt, 0, &got, (const uint8_t *)pw, strlen(pw) );
+    result = cjwt_decode( jwt, 0, &got, (const uint8_t *)pw, strlen(pw), 1000, 100 );
     CU_ASSERT( 0 == result );
 
     CU_ASSERT_STRING_EQUAL( "alpha", got->iss );
     CU_ASSERT_STRING_EQUAL( "beta",  got->sub );
     CU_ASSERT_STRING_EQUAL( "gamma", got->jti );
 
-    CU_ASSERT( 12345 == got->exp.tv_sec  );
-    CU_ASSERT(     0 == got->exp.tv_nsec );
+    CU_ASSERT( 12345 == got->exp->tv_sec  );
+    CU_ASSERT(     0 == got->exp->tv_nsec );
 
-    CU_ASSERT( 123 == got->nbf.tv_sec  );
-    CU_ASSERT(   0 == got->nbf.tv_nsec );
+    CU_ASSERT( 123 == got->nbf->tv_sec  );
+    CU_ASSERT(   0 == got->nbf->tv_nsec );
 
-    CU_ASSERT( 124 == got->iat.tv_sec  );
-    CU_ASSERT(   0 == got->iat.tv_nsec );
+    CU_ASSERT( 124 == got->iat->tv_sec  );
+    CU_ASSERT(   0 == got->iat->tv_nsec );
 
     CU_ASSERT( 2 == got->aud_count );
     CU_ASSERT_STRING_EQUAL( "one", got->aud_names[0] );
@@ -305,37 +313,37 @@ void alg_none_jwt( void )
     int result;
 
     /* test out the combinations of trailing signatures */
-    result = cjwt_decode( jwt_none_dirty, 0, NULL, NULL, 0 );
+    result = cjwt_decode( jwt_none_dirty, 0, NULL, NULL, 0, 0, 0 );
     CU_ASSERT( EINVAL == result );
 
-    result = cjwt_decode( jwt_none_dirty, OPT_ALLOW_ALG_NONE, NULL, NULL, 0 );
+    result = cjwt_decode( jwt_none_dirty, OPT_ALLOW_ALG_NONE, NULL, NULL, 0, 0, 0 );
     CU_ASSERT( EINVAL == result );
 
     result = cjwt_decode( jwt_none_dirty,
                           (OPT_ALLOW_ALG_NONE | OPT_ALLOW_ALG_NONE_IGNORE_SIG),
-                          NULL, NULL, 0 );
+                          NULL, NULL, 0, 0, 0 );
     CU_ASSERT( 0 == result );
 
     result = cjwt_decode( jwt_none_dirty,
                           (OPT_ALLOW_ALG_NONE_IGNORE_SIG),
-                          NULL, NULL, 0 );
+                          NULL, NULL, 0, 0, 0 );
     CU_ASSERT( EINVAL == result );
 
     /* test out the combinations of no trailing signatures */
-    result = cjwt_decode( jwt_none_no_sig, 0, NULL, NULL, 0 );
+    result = cjwt_decode( jwt_none_no_sig, 0, NULL, NULL, 0, 0, 0 );
     CU_ASSERT( result == EINVAL );
 
-    result = cjwt_decode( jwt_none_no_sig, OPT_ALLOW_ALG_NONE, NULL, NULL, 0 );
+    result = cjwt_decode( jwt_none_no_sig, OPT_ALLOW_ALG_NONE, NULL, NULL, 0, 0, 0 );
     CU_ASSERT( 0 == result );
 
     result = cjwt_decode( jwt_none_no_sig,
                           (OPT_ALLOW_ALG_NONE | OPT_ALLOW_ALG_NONE_IGNORE_SIG),
-                          NULL, NULL, 0 );
+                          NULL, NULL, 0, 0, 0 );
     CU_ASSERT( 0 == result );
 
     result = cjwt_decode( jwt_none_no_sig,
                           (OPT_ALLOW_ALG_NONE_IGNORE_SIG),
-                          NULL, NULL, 0 );
+                          NULL, NULL, 0, 0, 0 );
     CU_ASSERT( EINVAL == result );
 
 }
@@ -347,19 +355,19 @@ void edge_cases( void )
     int result;
 
     /* Nothing passed in */
-    result = cjwt_decode( NULL, 0, NULL, NULL, 0 );
+    result = cjwt_decode( NULL, 0, NULL, NULL, 0, 0, 0 );
     CU_ASSERT( EINVAL == result );
 
     /* No keys passed */
-    result = cjwt_decode( jwt, 0, NULL, NULL, 0 );
+    result = cjwt_decode( jwt, 0, NULL, NULL, 0, 0, 0 );
     CU_ASSERT( EINVAL == result );
 
     /* No keys passed, but fake the length */
-    result = cjwt_decode( jwt, 0, NULL, NULL, 99 );
+    result = cjwt_decode( jwt, 0, NULL, NULL, 99, 0, 0 );
     CU_ASSERT( EINVAL == result );
 
     /* Key passed, but no length */
-    result = cjwt_decode( jwt, 0, NULL, (const uint8_t *)pw, 0 );
+    result = cjwt_decode( jwt, 0, NULL, (const uint8_t *)pw, 0, 0, 0 );
     CU_ASSERT( EINVAL == result );
 }
 

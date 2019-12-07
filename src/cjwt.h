@@ -25,7 +25,8 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define OPT_ALLOW_ALG_NONE              (1<<0)
-#define OPT_ALLOW_ALG_NONE_IGNORE_SIG   (1<<1)
+#define OPT_ALLOW_ANY_TIME              (1<<1)
+#define OPT_ALLOW_ALG_NONE_IGNORE_SIG   (1<<2)
 
 
 /*----------------------------------------------------------------------------*/
@@ -74,9 +75,9 @@ typedef struct {
     size_t   aud_count;
     char   **aud_names;
 
-    struct timespec exp;
-    struct timespec nbf;
-    struct timespec iat;
+    struct timespec *exp;
+    struct timespec *nbf;
+    struct timespec *iat;
 
     cJSON *private_claims;
 } cjwt_t;
@@ -102,6 +103,11 @@ typedef struct {
  *        Example of setting both:
  *          OPT_ALLOW_ALG_NONE|OPT_ALLOW_ALG_NONE_IGNORE_SIG
  *
+ *  @note If present, the nbf and exp claims are enforced against the 'now'
+ *        parameter unless the OPT_ALLOW_ANY_TIME option flag is set.
+ *          Valid if: (nbf - skew) < now < (exp - skew)
+ *        Overflow is detected & reported as ETIME.
+ *
  *  @note If the function can't validate, or the secrets do not validate, no
  *        cjwt_t structure is returned as a safety precaution.
  *
@@ -111,14 +117,18 @@ typedef struct {
  *                       set to NULL if not successful
  *  @param key     [IN]  the public key to use for validating the signature
  *  @param key_len [IN]  the length of the key in bytes
+ *  @param now     [IN]  the time to use to validate the JWT
+ *  @param skew    [IN]  the allowable clock skew (in seconds) to permit when
+ *                       validating the time window.
  *
  *  @retval  0       successful
  *  @retval  EINVAL  invalid jwt format or mismatched key
  *  @retval  ENOMEM  unable to allocate needed memory
  *  @retval  ENOTSUP unsupported algorithm
+ *  @retval  ETIME   the JWT validity window has expired
  */
 int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
-                 const uint8_t *key, size_t key_len );
+                 const uint8_t *key, size_t key_len, time_t now, time_t skew );
 
 /**
  *  The function to free cjwt object.
