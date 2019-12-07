@@ -4,7 +4,7 @@ sudo: required
 language: c
 os:
     - linux
-    - osx
+#    - osx Doesn't seem to be working due to ruby/brew issues in travis-ci.
 
 matrix:
     include:
