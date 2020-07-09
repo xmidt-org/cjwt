@@ -2,7 +2,7 @@
 
 Thank you for considering a contribution!
 
-First, please read the [code of conduct](https://raw.githubusercontent.com/Comcast/.github/master/CODE_OF_CONDUCT.md). We take it very seriously!
+First, please read the [code of conduct](https://github.com/Comcast/.github/blob/e45a23536c38cd4bc1c60bc190dfe6dd5222bf33/CODE_OF_CONDUCT.md). We take it very seriously!
 
 Next, if you want to help out, do the following:
 
