@@ -34,7 +34,7 @@ function(find_cjson)
     endif()
 
     find_path(CJSON_INCLUDE_DIR
-        NAMES "cjson/cjson.h"
+        NAMES "cjson/cJSON.h"
         PATHS "${CMAKE_CURRENT_BINARY_DIR}/${CJSON_PATH}"
         PATH_SUFFIXES "include"
         NO_DEFAULT_PATH)
