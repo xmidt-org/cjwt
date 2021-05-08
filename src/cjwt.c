@@ -22,7 +22,7 @@
 #include <stdio.h>
 
 #include <trower-base64/base64.h>
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 
 #include <openssl/hmac.h>
 #include <openssl/err.h>

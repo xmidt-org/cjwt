@@ -16,7 +16,7 @@
  */
 #include <stdint.h>
 #include <time.h>
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
