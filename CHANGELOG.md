@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 
-## [1.0.3]
+## [v1.0.3]
 - Move to use Github Actions for building
 - Improve the cmake files to support the new build system better
 - Bump to a known new version
@@ -34,6 +34,6 @@ It is unc
 - First stable release
 
 [Unreleased]: https://github.com/xmidt-org/cjwt/compare/v1.0.3...HEAD
-[1.0.3]: https://github.com/xmidt-org/cjwt/compare/1.0.2...v1.0.3
-[1.0.2]: https://github.com/xmidt-org/cjwt/compare/1.0.1...v1.0.2
+[v1.0.3]: https://github.com/xmidt-org/cjwt/compare/1.0.2...v1.0.3
+[1.0.2]: https://github.com/xmidt-org/cjwt/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/xmidt-org/cjwt/compare/5d07465b61c7787e1ae8491c320a93cf3a1f531c...1.0.1
