@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+
+## [1.0.2]
+- Move to use Github Actions for building
+- Improve the cmake files to support the new build system better
+
 ### Added
 - Valgrind checking and fixes.
 - Algorithms that are unsupported now are not mapped to alg=none to prevent untrusted
@@ -19,5 +25,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - First stable release
 
-[Unreleased]: https://github.com/xmidt-org/cjwt/compare/1.0.1...HEAD
+[Unreleased]: https://github.com/xmidt-org/cjwt/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/xmidt-org/cjwt/compare/1.0.1...v1.0.2
 [1.0.1]: https://github.com/xmidt-org/cjwt/compare/5d07465b61c7787e1ae8491c320a93cf3a1f531c...1.0.1

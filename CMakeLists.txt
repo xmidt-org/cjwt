@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
-project(cjwt VERSION "1.0.1")
+project(cjwt VERSION "1.0.2")
 
 include(BitwiseVersion)
 include(CTest)
