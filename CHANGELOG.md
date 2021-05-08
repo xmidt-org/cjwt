@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.0.2]
 
-It is unc
+It is unclear what is exactly in 1.0.0 through 1.0.2.
+
 ### Added
 - Valgrind checking and fixes.
 - Algorithms that are unsupported now are not mapped to alg=none to prevent untrusted
