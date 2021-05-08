@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: Apache-2.0
+
 build
 tags
 
@@ -25,3 +28,4 @@ _testmain.go
 *.exe
 *.test
 *.prof
+*.xml

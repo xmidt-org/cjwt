@@ -1,0 +1,16 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: cjwt
+Upstream-Contact: Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+Source: https://github.com/xmidt-org/cjwt\
+
+Files: .whitesource
+Copyright: 2021 Unknown
+License: Apache-2.0
+
+Files: NOTICE
+Copyright: 2017-2021 Comcast Cable Communications Management, LLC
+License: Apache-2.0
+
+Files: tests/inputs/*
+Copyright: 2017-2021 Comcast Cable Communications Management, LLC
+License: Apache-2.0

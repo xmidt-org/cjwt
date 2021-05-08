@@ -1,3 +1,7 @@
+<!--
+SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC
+SPDX-License-Identifier: Apache-2.0
+-->
 # cjwt
 
 A C JWT Implementation
@@ -7,7 +11,7 @@ A C JWT Implementation
 [![Coverity](https://img.shields.io/coverity/scan/11926.svg)]("https://scan.coverity.com/projects/comcast-cjwt)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=xmidt-org_cjwt&metric=alert_status)](https://sonarcloud.io/dashboard?id=xmidt-org_cjwt)
 [![Language Grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/xmidt-org/cjwt.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/xmidt-org/cjwt/context:cpp)
-[![Apache V2 License](http://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/xmidt-org/cjwt/blob/main/LICENSE.txt)
+[![Apache V2 License](http://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/xmidt-org/cjwt/blob/main/LICENSES/Apache-2.0.txt)
 [![GitHub release](https://img.shields.io/github/release/xmidt-org/cjwt.svg)](CHANGELOG.md)
 
 
