@@ -1,25 +1,67 @@
-# How to Contribute
+<!--
+SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+SPDX-License-Identifier: Apache-2.0
+-->
+Contribution Guidelines
+=======================
 
-Thank you for considering a contribution!
+We love to see contributions to the project and have tried to make it easy to 
+do so. If you would like to contribute code to this project you can do so 
+through GitHub by [forking the repository and sending a pull request](http://gun.io/blog/how-to-github-fork-branch-and-pull-request/).
 
-First, please read the [code of conduct](https://github.com/Comcast/.github/blob/e45a23536c38cd4bc1c60bc190dfe6dd5222bf33/CODE_OF_CONDUCT.md). We take it very seriously!
+Before Comcast merges your code into the project you must sign the 
+[Comcast Contributor License Agreement (CLA)](https://gist.github.com/ComcastOSS/a7b8933dd8e368535378cda25c92d19a).
 
-Next, if you want to help out, do the following:
+If you haven't previously signed a Comcast CLA, you'll automatically be asked 
+to when you open a pull request. Alternatively, we can e-mail you a PDF that 
+you can sign and scan back to us. Please send us an e-mail or create a new 
+GitHub issue to request a PDF version of the CLA.
 
-1. Fork the project.
-2. Make a feature branch with the name of your change.
-3. Make a change.
-4. Commit your code.
-5. Issue a Pull Request.
+If you have a trivial fix or improvement, please create a pull request and 
+request a review from a [maintainer](MAINTAINERS.md) of this repository.
 
-Once your PR is issued, we will review your work and decide on adding it to the project!
+If you plan to do something more involved, that involves a new feature or 
+changing functionality, please first create an [issue](#issues) so a discussion of 
+your idea can happen, avoiding unnecessary work and clarifying implementation.
 
-For more details about contributing to GitHub projects see
-http://gun.io/blog/how-to-github-fork-branch-and-pull-request/
+Documentation
+-------------
 
+If you contribute anything that changes the behavior of the application, 
+document it in the follow places as applicable:
+* the code itself, through clear comments and unit tests
+* [README](README.md)
 
-## Contributor License Agreement
+This includes new features, additional variants of behavior, and breaking 
+changes.
 
-Before Comcast merges your code into the project you must sign the [Comcast Contributor License Agreement (CLA)](https://gist.github.com/ComcastOSS/a7b8933dd8e368535378cda25c92d19a).
+Testing
+-------
 
-If you haven't previously signed a Comcast CLA, you'll automatically be asked to when you open a pull request. Alternatively, we can send you a PDF that you can sign and scan back to us. Please create a new GitHub issue to request a PDF version of the CLA.
+Tests are written using cunit, and are run prior to the PR being accepted.
+
+Issues
+------
+
+For creating an issue:
+* **Bugs:** please be as thorough as possible, with steps to recreate the issue 
+  and any other relevant information.
+* **Feature Requests:** please include functionality and use cases.  If this is 
+  an extension of a current feature, please include whether or not this would 
+  be a breaking change or how to extend the feature with backwards 
+  compatibility.
+* **Security Vulnerability:** please report it at 
+  https://my.xfinity.com/vulnerabilityreport and contact the [maintainers](MAINTAINERS.md).
+
+If you wish to work on an issue, please assign it to yourself.  If you have any
+questions regarding implementation, feel free to ask clarifying questions on 
+the issue itself.
+
+Pull Requests
+-------------
+
+* should be narrowly focused with no more than 3 or 4 logical commits
+* when possible, address no more than one issue
+* should be reviewable in the GitHub code review tool
+* should be linked to any issues it relates to (i.e. issue number after (#) in commit messages or pull request message)
+* should conform to existing code style

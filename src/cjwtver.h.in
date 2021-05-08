@@ -1,8 +1,5 @@
-#
-# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
-#
-# SPDX-License-Identifier: Apache-2.0
-#
+// SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+// SPDX-License-Identifier: Apache-2.0
 
 #ifndef _CJWT_VERSION_H_
 #define _CJWT_VERSION_H_ 1
