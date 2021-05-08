@@ -12,66 +12,42 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 3.13)
 
-project(cjwt)
-include(ExternalProject)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+
+project(cjwt VERSION "1.0.1")
+
+include(BitwiseVersion)
 include(CTest)
+include(FindcJSON)
+include(FindTrowerBase64)
+include(LicenseLinterTarget)
+include(Coverage)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Werror -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Werror -Wall")
+add_definitions(-std=c99)
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Werror -Wall -D_XOPEN_SOURCE=600")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -D_XOPEN_SOURCE=600")
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
-endif()
+add_library(cjwt SHARED "")
 
-set(INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/_install)
-set(PREFIX_DIR ${CMAKE_CURRENT_BINARY_DIR}/_prefix)
-set(INCLUDE_DIR ${INSTALL_DIR}/include)
-set(LIBRARY_DIR ${INSTALL_DIR}/lib${LIB_SUFFIX})
-#set(LIBRARY_DIR ${INSTALL_DIR}/lib)
-#set(LIBRARY_DIR64 ${INSTALL_DIR}/lib64)
+################################################################################
+# Find or acquire software dependencies
+################################################################################
 
-include_directories(${INCLUDE_DIR}
-                    ${INCLUDE_DIR}/cjson
-                    ${INCLUDE_DIR}/trower-base64)
-include_directories (SYSTEM /usr/include
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-                            /usr/local/opt/openssl/include
-endif()
-)
-link_directories ( ${LIBRARY_DIR} )
+find_cjson(        PATH ${CJSON_PATH}  VERSION "1.0.0" GIT_TAG "")
+find_trower_base64(PATH ${TROWER_PATH}                 GIT_TAG "")
 
-if (NOT BUILD_YOCTO)
+find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIRS})
 
-# base64 external dependency
-ExternalProject_Add(trower-base64
-    PREFIX ${PREFIX_DIR}/trower-base64
-    GIT_REPOSITORY https://github.com/Comcast/trower-base64.git
-    GIT_TAG "v1.1.2"
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF)
-add_library(libtrower-base64 STATIC SHARED IMPORTED)
-add_dependencies(libtrower-base64 trower-base64)
-
-# cJSON external dependency
-ExternalProject_Add(cJSON
-    PREFIX ${PREFIX_DIR}/cJSON
-    GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
-    GIT_TAG "aafb64a1c549b7b927e339df6d35b1d5059dc235"
-    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    CMAKE_ARGS += -DCMAKE_MACOSX_RPATH=true
-endif()
-)
-add_library(libcjson STATIC IMPORTED)
-add_dependencies(libcjson cjson)
-
-endif ()
+################################################################################
+# Process the subdirectories now
+################################################################################
 
 add_subdirectory(src)
 
-# Unit tests
 if (BUILD_TESTING)
+    include(FindCunit)
 	add_subdirectory(tests)
 endif (BUILD_TESTING)

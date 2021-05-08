@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    paths-ignore:
+      - 'AUTHORS'
+      - 'LICENSE'
+      - 'NOTICE'
+      - '**.md'
+      - '.gitignore'
+    tags-ignore:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: [ ubuntu-latest ]
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      # Install the dependent packages
+      - name: Install packages
+        run: |
+          sudo apt update
+          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev gcovr libcjson-dev
+          pip install codecov
+
+      - name: Make Build Directory
+        run: mkdir build
+
+      - name: Get Sonarcloud Binaries
+        working-directory: build
+        run: |
+          curl -s -L -O https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          curl -s -L -O https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.0.2311-linux.zip
+          unzip -q -o build-wrapper-linux-x86.zip
+          unzip -q sonar-scanner-cli-4.6.0.2311-linux.zip
+
+      - name: CMake
+        working-directory: build
+        run: |
+          cmake .. -DDISABLE_VALGRIND:BOOL=false
+
+      - name: Build
+        working-directory: build
+        run: |
+          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test
+
+      - name: Merge GCOV Reports for Sonarcloud
+        working-directory: build
+        run: |
+          gcovr --sonarqube coverage.xml -r ..
+
+      - name: Upload SonarCloud
+        run: |
+          build/sonar-scanner-4.6.0.2311-linux/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dproject.settings=.sonar-project.properties -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Codecov.io
+        uses: codecov/codecov-action@v1
+        with:
+          directory: .
+          fail_ci_if_error: true

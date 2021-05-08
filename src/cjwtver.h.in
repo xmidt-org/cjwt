@@ -1,0 +1,30 @@
+#
+# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+#ifndef _CJWT_VERSION_H_
+#define _CJWT_VERSION_H_ 1
+
+#define CJWT_VERSION          "@cjwt_VERSION@"
+
+#define CJWT_VERSION_MAJOR    @cjwt_VERSION_MAJOR@
+#define CJWT_VERSION_MINOR    @cjwt_VERSION_MINOR@
+#define CJWT_VERSION_PATCH    @cjwt_VERSION_PATCH@
+
+/* This is the numeric version of the cjwt version number, meant for easier
+ * parsing and comparisons by programs.  The CJWT_VERSION_NUM define will
+ * always follow this syntax:
+ *
+ *      0xAABBCC
+ *
+ * Where AA, BB, and CC are each major version, minor version, patch in hex
+ * using 8 bits each.
+ *
+ * It should be safe to compare two different versions with the greater number
+ * being the newer version.
+ */
+#define CJWT_VERSION_NUM      @cjwt_BITWISE_VERSION@
+
+#endif

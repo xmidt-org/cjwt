@@ -27,11 +27,10 @@ link_directories ( ${LIBRARY_DIR} )
 add_test(NAME test_cjwt COMMAND ${MEMORY_CHECK} ./test_cjwt)
 add_executable(test_cjwt test_cjwt.c ../src/cjwt.c)
 
-target_link_libraries (test_cjwt -lssl -lcrypto -lpthread -ltrower-base64
- -lcjson 
- -lcunit
- -lm)
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_cjwt ${CUNIT_LIBRARIES})
+target_link_libraries (test_cjwt ${CJSON_LIBRARIES})
+target_link_libraries (test_cjwt ${TROWER_LIBRARIES})
+target_link_libraries (test_cjwt ${OPENSSL_LIBRARIES})
+target_link_libraries (test_cjwt -lm)
 target_link_libraries (test_cjwt gcov)
 target_link_libraries (test_cjwt rt)
-endif()

@@ -25,7 +25,7 @@
 
 #include <CUnit/Basic.h>
 
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 #include "../src/cjwt.h"
 
 typedef struct {

@@ -21,8 +21,8 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include <base64.h>
-#include <cJSON.h>
+#include <trower-base64/base64.h>
+#include <cjson/cJSON.h>
 
 #include <openssl/hmac.h>
 #include <openssl/err.h>
