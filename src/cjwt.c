@@ -152,7 +152,8 @@ static int cjwt_sign( cjwt_t *cjwt, unsigned char **out, const char *in, int *ou
             return cjwt_sign_sha_hmac( cjwt, out, EVP_sha384(), in, out_len );
         case alg_hs512:
             return cjwt_sign_sha_hmac( cjwt, out, EVP_sha512(), in, out_len );
-        default :
+        default:
+            break;
     }//switch
 
     return -1;
