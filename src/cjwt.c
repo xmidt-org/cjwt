@@ -414,7 +414,7 @@ static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
                     ptr_values[i] = str_val;
                 }
             }//for
-			
+
             p_cjwt_aud_list aud_new = malloc( sizeof( cjwt_aud_list_t ) );
 
             if( !aud_new ) {
@@ -563,7 +563,7 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
         return EINVAL;
     }
 
-    sz_payload = strlen( ( char * )p_payload );
+    sz_payload = strlen( p_payload );
 
     decoded_pl = b64_url_decode( p_payload, sz_payload, &out_size );
     cjwt_info( "----------------- payload ------------------- \n" );
@@ -593,7 +593,7 @@ static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
         return EINVAL;
     }
 
-    sz_head = strlen( ( char * )p_head );
+    sz_head = strlen( p_head );
     decoded_head = b64_url_decode( p_head, sz_head, &out_size );
     cjwt_info( "----------------- header -------------------- \n" );
     cjwt_info( "Header Size = %zd , Decoded size = %zd\n", sz_head, out_size );
@@ -609,6 +609,7 @@ end:
     free( decoded_head );
     return ret;
 }
+
 
 static int cjwt_update_key( cjwt_t *p_cjwt, const uint8_t *key, size_t key_len )
 {
@@ -629,16 +630,6 @@ static int cjwt_update_key( cjwt_t *p_cjwt, const uint8_t *key, size_t key_len )
     return ret;
 }
 
-static cjwt_t* cjwt_create()
-{
-    cjwt_t *init = malloc( sizeof( cjwt_t ) );
-
-    if( init ) {
-			memset (init, 0, sizeof(cjwt_t));
-    }
-
-    return init;
-}
 
 /**
  * validates jwt token and extracts data
@@ -692,7 +683,7 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
     signature[0] = '\0';
     signature++;
     //create cjson
-    cjwt_t *out = cjwt_create();
+    cjwt_t *out = calloc( 1, sizeof(cjwt_t) );
 
     if( !out ) {
         cjwt_error( "cjwt memory alloc failed\n" );
@@ -764,8 +755,7 @@ int cjwt_destroy( cjwt_t **jwt )
         return 0;
     }
 
-    if(del->header.key)
-    {
+    if( del->header.key ) {
         free(del->header.key);
     }
     del->header.key = NULL;
@@ -807,4 +797,3 @@ int cjwt_destroy( cjwt_t **jwt )
     free (del);
     return 0;
 }
-//end of file
