@@ -50,6 +50,43 @@ void test_b64_url_decode()
             .out_len = 0,
         },
 
+        /* Protect against a bogus empty string */
+        {   .in = "==",
+            .in_len = 2,
+            .out = NULL,
+            .out_len = 0,
+        },
+
+        /* Invalid, safely fail. */
+        {   .in = "b==",
+            .in_len = 3,
+            .out = NULL,
+            .out_len = 0,
+        },
+
+        /* Invalid, padding. */
+        {   .in = "ba=",
+            .in_len = 3,
+            .out = NULL,
+            .out_len = 0,
+        },
+        {   .in = "bad==",
+            .in_len = 5,
+            .out = NULL,
+            .out_len = 0,
+        },
+        {   .in = "bad4==",
+            .in_len = 6,
+            .out = NULL,
+            .out_len = 0,
+        },
+        {   .in = "bad4=",
+            .in_len = 5,
+            .out = NULL,
+            .out_len = 0,
+        },
+
+
         /* Disallow other forms. */
         {   .in = "ab+d", .in_len = 4, .out = NULL, .out_len = 0, },
         {   .in = "as/d", .in_len = 4, .out = NULL, .out_len = 0, },

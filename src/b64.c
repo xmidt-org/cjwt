@@ -68,6 +68,12 @@ uint8_t* b64_url_decode( const char *in, size_t in_len, size_t *out_len )
         if( '=' == in[in_len - 2] ) {
             padding++;
         }
+
+        /* If there is padding then it should only pad to ensure the string
+         * has a multiple of 4.  Anything else is an error. */
+        if( 0 != (0x03 & in_len) ) {
+            return NULL;
+        }
     }
 
     in_len -= padding;
