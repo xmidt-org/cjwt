@@ -4,6 +4,7 @@
 target_sources(cjwt
     PRIVATE
         cjwt.c
+        b64.c
 )
 
 configure_file(cjwtver.h.in

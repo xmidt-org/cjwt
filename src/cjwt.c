@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include <trower-base64/base64.h>
 #include <cjson/cJSON.h>
 
 #include <openssl/hmac.h>
@@ -18,6 +17,7 @@
 #include <openssl/bio.h>
 
 #include "cjwt.h"
+#include "b64.h"
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -61,8 +61,6 @@
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 extern char *strdup(const char *s);
-extern size_t b64url_get_decoded_buffer_size( const size_t encoded_size );
-extern size_t b64url_decode( const uint8_t *input, const size_t input_size, uint8_t *output );
 
 
 /*----------------------------------------------------------------------------*/
@@ -154,8 +152,8 @@ static int cjwt_sign( cjwt_t *cjwt, unsigned char **out, const char *in, int *ou
             return cjwt_sign_sha_hmac( cjwt, out, EVP_sha384(), in, out_len );
         case alg_hs512:
             return cjwt_sign_sha_hmac( cjwt, out, EVP_sha512(), in, out_len );
-        default :
-            return  -1;
+        default:
+            break;
     }//switch
 
     return -1;
@@ -195,7 +193,7 @@ rsa_end:
 
 static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64 )
 {
-    int ret = EINVAL, sz_sigb64 = 0;
+    int ret = EINVAL;
     RSA *rsa = NULL;
     size_t enc_len = 0, sig_desize = 0;
     uint8_t *decoded_sig = NULL;
@@ -214,23 +212,8 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
     }
 
     //decode p_sigb64
-    sz_sigb64 = strlen( ( char * )p_sigb64 );
-    sig_desize = b64url_get_decoded_buffer_size( sz_sigb64 );
-    //Because b64url_decode() always writes in blocks of 3 bytes for every 4 
-    //characters even when the last 2 bytes are not used, we need up to 2 
-    //extra bytes of output buffer to avoid a buffer overrun 
-    decoded_sig = malloc( sig_desize + 2 );
+    decoded_sig = b64_url_decode( p_sigb64, strlen(p_sigb64), &sig_desize );
 
-    if( !decoded_sig ) {
-        cjwt_error( "memory allocation failed\n" );
-        //free rsa
-        RSA_free( rsa );
-        cjwt_rsa_error();
-        return ENOMEM;
-    }
-
-    memset( decoded_sig, 0, sig_desize + 2 );
-    sig_desize = b64url_decode( ( uint8_t * )p_sigb64, sz_sigb64, decoded_sig );
     cjwt_info( "----------------- signature ----------------- \n" );
     cjwt_info( "Bytes = %d\n", ( int )sig_desize );
     cjwt_info( "--------------------------------------------- \n" );
@@ -240,7 +223,6 @@ static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64
         goto end;
     }
 
-    decoded_sig[sig_desize] = '\0';
     //verify rsa
     enc_len = strlen( p_enc );
 
@@ -286,6 +268,8 @@ static int cjwt_verify_signature( cjwt_t *p_jwt, char *p_in, const char *p_sign 
     int ret = 0;
     int sz_signed = 0;
     unsigned char* signed_out = NULL;
+    size_t sz_decoded = 0;
+    uint8_t *signed_dec;
 
     if( !p_jwt || !p_in || !p_sign ) {
         ret = EINVAL;
@@ -306,44 +290,31 @@ static int cjwt_verify_signature( cjwt_t *p_jwt, char *p_in, const char *p_sign 
     }
 
     //decode signature from input token
-    size_t sz_p_sign = strlen( p_sign );
-    size_t sz_decoded = b64url_get_decoded_buffer_size( sz_p_sign );
-    uint8_t *signed_dec = malloc( sz_decoded + 1 );
+    signed_dec = b64_url_decode( p_sign, strlen(p_sign), &sz_decoded );
 
     if( !signed_dec ) {
-        ret = ENOMEM;
-        goto err_decode;
-    }
-
-    memset( signed_dec, 0, ( sz_decoded + 1 ) );
-    //decode
-    int out_size = b64url_decode( ( uint8_t * )p_sign, sz_p_sign, signed_dec );
-
-    if( !out_size ) {
         ret = EINVAL;
         goto err_match;
     }
 
-    signed_dec[out_size] = '\0';
-    cjwt_info( "Signature length : enc %d, signature %d\n",
-               ( int )sz_signed, ( int )out_size );
+    cjwt_info( "Signature length : enc %d, signature %zd\n",
+                sz_signed, sz_decoded );
     cjwt_info( "signed token : %s\n", signed_out );
     cjwt_info( "expected token signature  %s\n", signed_dec );
 
-    if( sz_signed != out_size ) {
-        cjwt_info( "Signature length mismatch: enc %d, signature %d\n",
-                   ( int )sz_signed, ( int )out_size );
+    if( (size_t) sz_signed != sz_decoded ) {
+        cjwt_info( "Signature length mismatch: enc %d, signature %zd\n",
+                   sz_signed, sz_decoded );
         ret = EINVAL;
         goto err_match;
     }
 
-    if( 0 != CRYPTO_memcmp(signed_out, signed_dec, out_size) ) {
+    if( 0 != CRYPTO_memcmp(signed_out, signed_dec, sz_decoded) ) {
         ret = EINVAL;
     }
 
 err_match:
     free( signed_dec );
-err_decode:
     free( signed_out );
 end:
     return ret;
@@ -585,7 +556,6 @@ static int cjwt_update_header( cjwt_t *p_cjwt, char *p_dechead )
 static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
 {
     int ret, sz_payload;
-    size_t pl_desize;
     size_t out_size = 0;
     uint8_t *decoded_pl;
 
@@ -594,26 +564,17 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     }
 
     sz_payload = strlen( ( char * )p_payload );
-    pl_desize = b64url_get_decoded_buffer_size( sz_payload );
+
+    decoded_pl = b64_url_decode( p_payload, sz_payload, &out_size );
     cjwt_info( "----------------- payload ------------------- \n" );
-    cjwt_info( "Payload Size = %d , Decoded size = %d\n", sz_payload, ( int )pl_desize );
-    decoded_pl = malloc( pl_desize + 1 );
-
-    if( !decoded_pl ) {
-        return ENOMEM;
-    }
-
-    memset( decoded_pl, 0, ( pl_desize + 1 ) );
-    //decode payload
-    out_size = b64url_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
-    cjwt_info( "Bytes = %d\n", ( int )out_size );
+    cjwt_info( "Payload Size = %zd , Decoded size = %zd\n", sz_payload, out_size );
+    cjwt_info( "Bytes = %zd\n", out_size );
 
     if( !out_size ) {
         ret = EINVAL;
         goto end;
     }
 
-    decoded_pl[out_size] = '\0';
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_pl );
     ret = cjwt_update_payload( p_cjwt, ( char* )decoded_pl );
 end:
@@ -623,8 +584,8 @@ end:
 
 static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
 {
-    int sz_head, ret = 0;
-    size_t head_desize;
+    size_t sz_head = 0;
+    int ret = 0;
     uint8_t *decoded_head;
     size_t out_size = 0;
 
@@ -633,26 +594,15 @@ static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
     }
 
     sz_head = strlen( ( char * )p_head );
-    head_desize = b64url_get_decoded_buffer_size( sz_head );
+    decoded_head = b64_url_decode( p_head, sz_head, &out_size );
     cjwt_info( "----------------- header -------------------- \n" );
-    cjwt_info( "Header Size = %d , Decoded size = %d\n", sz_head, ( int )head_desize );
-    decoded_head = malloc( head_desize + 1 );
-
-    if( !decoded_head ) {
-        return ENOMEM;
-    }
-
-    memset( decoded_head, 0, head_desize + 1 );
-    //decode header
-    out_size = b64url_decode( ( uint8_t * )p_head, sz_head, decoded_head );
-    cjwt_info( "Bytes = %d\n", ( int )out_size );
+    cjwt_info( "Header Size = %zd , Decoded size = %zd\n", sz_head, out_size );
 
     if( !out_size ) {
         ret = EINVAL;
         goto end;
     }
 
-    decoded_head[out_size] = '\0';
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_head );
     ret = cjwt_update_header( p_cjwt, ( char* )decoded_head );
 end:
