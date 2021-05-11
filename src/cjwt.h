@@ -1,5 +1,8 @@
 // SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC
 // SPDX-License-Identifier: Apache-2.0
+#ifndef __CJWT_H__
+#define __CJWT_H__
+
 #include <stdint.h>
 #include <time.h>
 #include <cjson/cJSON.h>
@@ -32,9 +35,7 @@ typedef enum {
 } cjwt_alg_t;
 
 typedef struct {
-    cjwt_alg_t      alg;
-    unsigned char   *key;
-    int             key_len;
+    cjwt_alg_t alg;
 
     /* Unsupported:
      *  jku
@@ -52,7 +53,7 @@ typedef struct {
 typedef struct cjwt_aud_list {
     int  count;
     char **names;
-} cjwt_aud_list_t, *p_cjwt_aud_list;
+} cjwt_aud_list_t;
 
 typedef struct {
     cjwt_header_t header;
@@ -60,15 +61,14 @@ typedef struct {
     char *iss;
     char *sub;
     char *jti;
-    p_cjwt_aud_list aud;
+
+    cjwt_aud_list_t aud;
 
     struct timespec exp;
     struct timespec nbf;
     struct timespec iat;
 
     cJSON *private_claims;
-
-    void *internal_use_only;
 } cjwt_t;
 
 /*----------------------------------------------------------------------------*/
@@ -82,9 +82,8 @@ typedef struct {
  *        must be freed.  cjwt_destroy() must be called to destroy the object
  *        when we are done with it.
  *
- *  @note This function does not
- *
- *  @param encoded [IN]  the incoming encoded JWT (MUST be '\0' terminated string)
+ *  @param encoded [IN]  the incoming encoded JWT
+ *  @param enc_len [IN]  length of the encoded JWT bytes
  *  @param options [IN]  a bitmask of the options
  *  @param jwt     [OUT] the resulting JWT if found to be valid,
  *                       set to NULL if not successful
@@ -96,8 +95,9 @@ typedef struct {
  *  @retval  ENOMEM  unable to allocate needed memory
  *  @retval  ENOTSUP unsupported algorithm
  */
-int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
-                 const uint8_t *key, size_t key_len );
+int cjwt_decode( const char *encoded, size_t enc_len, unsigned int options,
+                 cjwt_t **jwt, const uint8_t *key, size_t key_len );
+
 
 /**
  *  The function to free cjwt object
@@ -108,14 +108,6 @@ int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
  *
  *  @retval   0 successful
  */
-int cjwt_destroy( cjwt_t **jwt );
+int cjwt_destroy( cjwt_t *jwt );
 
-
-/**
- *  The function to convert an algorith text string to an enum
- *
- *  @param alg_str  string specification of algorithm
- *
- *  @retval  enum of algorithm, -1 if invalid
- */
-int cjwt_alg_str_to_enum( const char *alg_str );
+#endif

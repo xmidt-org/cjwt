@@ -98,15 +98,10 @@ uint8_t* b64_url_decode( const char *in, size_t in_len, size_t *out_len )
 
     decoded_len += remainder;
 
-    /* The +1 is a hack for now to give a character for a trailing '\0'
-     * in the event that lengths are not honored. */
-    out = malloc( decoded_len + 1 );
+    out = malloc( decoded_len );
     if( !out ) {
         return NULL;
     }
-
-    /* The other part of the hack. */
-    out[decoded_len] = '\0';
 
     for( size_t i = 0, j = 0; i < in_len; i++ ) {
         int8_t val;
