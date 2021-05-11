@@ -1,5 +1,4 @@
 /* SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC */
-/* SPDX-FileCopyrightText: 2021 Weston Schmidt */
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #ifndef __B64_H__
