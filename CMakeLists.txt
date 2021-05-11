@@ -23,7 +23,7 @@ add_library(cjwt SHARED "")
 # Find or acquire software dependencies
 ################################################################################
 
-find_cjson(PATH ${CJSON_PATH}  VERSION "1.0.0" GIT_TAG "")
+find_cjson(PATH ${CJSON_PATH}  VERSION "1.7.14" GIT_TAG "")
 
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIRS})
