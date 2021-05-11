@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC
 // SPDX-License-Identifier: Apache-2.0
-#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <strings.h>
@@ -139,7 +138,7 @@ static int cjwt_verify_sha( cjwt_alg_t alg, const char    *full, size_t full_len
             return EINVAL;
     }
 
-    HMAC( evp_alg, key, key_len,
+    HMAC( evp_alg, key, (int) key_len,
           (const unsigned char*) full, full_len,
           buf, &len);
 
@@ -163,7 +162,7 @@ static int cjwt_verify_rsa( cjwt_alg_t alg, const char    *full, size_t full_len
         return EINVAL;
     }
 
-    keybio = BIO_new_mem_buf( key, key_len );
+    keybio = BIO_new_mem_buf( key, (int) key_len );
     if( keybio ) {
         rsa = PEM_read_bio_RSA_PUBKEY( keybio, &rsa, NULL, NULL );
         if( !rsa ) {
@@ -204,7 +203,8 @@ static int cjwt_verify_rsa( cjwt_alg_t alg, const char    *full, size_t full_len
     return EINVAL;
 }
 
-static int cjwt_verify_signature( cjwt_t *jwt, const char *full, size_t full_len,
+static int cjwt_verify_signature( const cjwt_t *jwt,
+                                  const char *full, size_t full_len,
                                   const char *enc_sig, size_t enc_sig_len,
                                   const uint8_t *key, size_t key_len )
 {
@@ -229,7 +229,9 @@ static int cjwt_verify_signature( cjwt_t *jwt, const char *full, size_t full_len
         case alg_rs512:
             rv = cjwt_verify_rsa( jwt->header.alg, full, full_len, sig, sig_len,
                                   key, key_len );
+            break;
         default:
+            rv = ENOTSUP;
             break;
     }
 
@@ -237,9 +239,9 @@ static int cjwt_verify_signature( cjwt_t *jwt, const char *full, size_t full_len
     return rv;
 }
 
-static int process_string( cJSON *json, const char *name, char **dest )
+static int process_string( const cJSON *json, const char *name, char **dest )
 {
-    cJSON *val = cJSON_GetObjectItemCaseSensitive( json, name );
+    const cJSON *val = cJSON_GetObjectItemCaseSensitive( json, name );
 
     if( val ) {
         *dest = strdup( val->valuestring );
@@ -251,9 +253,9 @@ static int process_string( cJSON *json, const char *name, char **dest )
     return 0;
 }
 
-static int process_time( cJSON *json, const char *name, struct timespec *dest )
+static int process_time( const cJSON *json, const char *name, struct timespec *dest )
 {
-    cJSON *val = cJSON_GetObjectItemCaseSensitive( json, name );
+    const cJSON *val = cJSON_GetObjectItemCaseSensitive( json, name );
 
     if( val ) {
         cjwt_info( "%s Json  = %s,type=%d,int=%d,double=%f\n", name,
@@ -271,10 +273,10 @@ static int process_time( cJSON *json, const char *name, struct timespec *dest )
     return 0;
 }
 
-static int process_aud( cJSON *json, cjwt_t *cjwt )
+static int process_aud( const cJSON *json, cjwt_t *cjwt )
 {
-    cJSON *tmp = NULL;
-    cJSON *aud = NULL;
+    const cJSON *tmp = NULL;
+    const cJSON *aud = NULL;
 
     aud = cJSON_GetObjectItemCaseSensitive( json, "aud" );
 
@@ -367,7 +369,7 @@ static int cjwt_process_header( cjwt_t *cjwt, unsigned int options,
     size_t decoded_len = 0;
     char *decoded = NULL;
     cJSON *json = NULL;
-    cJSON *alg = NULL;
+    const cJSON *alg = NULL;
 
     decoded = (char*) b64_url_decode( header, len, &decoded_len );
     if( !decoded ) {
@@ -413,14 +415,6 @@ static int cjwt_process_header( cjwt_t *cjwt, unsigned int options,
 }
 
 
-/*
- *  JOSE header           - required
- *  encrypted key         - optional
- *  initialization vector - optional
- *  ciphertext            - required
- *  authentication tag    - optional
- */
-
 /**
  * validates jwt token and extracts data
  */
@@ -429,8 +423,8 @@ int cjwt_decode( const char *encoded, size_t enc_len, unsigned int options,
 {
     int ret = 0;
     struct split_jwt sections;
-    struct section *header = NULL;
-    struct section *payload = NULL;
+    const struct section *header = NULL;
+    const struct section *payload = NULL;
 
     if( !encoded || !jwt || !enc_len ) {
         return EINVAL;
@@ -464,7 +458,7 @@ int cjwt_decode( const char *encoded, size_t enc_len, unsigned int options,
     }
 
     if( out->header.alg != alg_none ) {
-        struct section *sig = NULL;
+        const struct section *sig = NULL;
         size_t signed_len = 0;
         
         sig = &sections.sections[2];
