@@ -52,6 +52,8 @@ typedef enum {
     CJWTE_TIME_AFTER_EXP,               /* 24 */
     CJWTE_HEADER_UNSUPPORTED_TYP,       /* 25 */
     CJWTE_HEADER_UNSUPPORTED_UNKNOWN,   /* 26 */
+    CJWTE_KEY_TOO_LARGE,                /* 27 */
+    CJWTE_SIGNATURE_KEY_TOO_LARGE,      /* 28 */
 
     CJWTE_LAST  /* never use! */
 } cjwt_code_t;

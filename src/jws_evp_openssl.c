@@ -39,7 +39,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-cjwt_code_t verify_hmac( const EVP_MD *sha, struct sig_input *in )
+cjwt_code_t verify_hmac( const EVP_MD *sha, const struct sig_input *in )
 {
     cjwt_code_t rv = CJWTE_SIGNATURE_VALIDATION_FAILED;
     EVP_MD_CTX* md_ctx = NULL;
@@ -47,8 +47,12 @@ cjwt_code_t verify_hmac( const EVP_MD *sha, struct sig_input *in )
     uint8_t buff[EVP_MAX_MD_SIZE];
     size_t size = sizeof( buff );
 
+    if( INT_MAX < in->key.len ) {
+        return CJWTE_KEY_TOO_LARGE;
+    }
+
     md_ctx = EVP_MD_CTX_new();
-    pkey = EVP_PKEY_new_mac_key( EVP_PKEY_HMAC, NULL, in->key.data, in->key.len );
+    pkey = EVP_PKEY_new_mac_key( EVP_PKEY_HMAC, NULL, in->key.data, (int) in->key.len );
 
     if( md_ctx && pkey &&
         (1 == EVP_DigestSignInit(md_ctx, NULL, sha, NULL, pkey)) &&
@@ -70,7 +74,7 @@ cjwt_code_t verify_hmac( const EVP_MD *sha, struct sig_input *in )
 }
 
 
-cjwt_code_t verify_es( const EVP_MD *sha, struct sig_input *in )
+cjwt_code_t verify_es( const EVP_MD *sha, const struct sig_input *in )
 {
     cjwt_code_t rv = CJWTE_SIGNATURE_VALIDATION_FAILED;
     EVP_MD_CTX *md_ctx = NULL;
@@ -81,13 +85,17 @@ cjwt_code_t verify_es( const EVP_MD *sha, struct sig_input *in )
     ECDSA_SIG *ecdsa_sig = NULL;
     BIGNUM *pr = NULL;
     BIGNUM *ps = NULL;
-    int new_sig_len;
+    int new_sig_len = 0;
     uint8_t *new_sig = NULL;
     uint8_t digest[EVP_MAX_MD_SIZE];
     unsigned int dig_len = 0;
 
     if( (0 == in->key.len) || (NULL == in->key.data) ) {
         return CJWTE_SIGNATURE_MISSING_KEY;
+    }
+
+    if( INT_MAX < in->sig.len ) {
+        return CJWTE_SIGNATURE_KEY_TOO_LARGE;
     }
 
     /* Read the ECDSA key in from a PEM encoded blob of memory */
@@ -109,23 +117,33 @@ cjwt_code_t verify_es( const EVP_MD *sha, struct sig_input *in )
     /* Read out the r,s numbers from the signature for later.
      * We must convert from this format into DEC because that's
      * all openssl supports. */
-    pr = BN_bin2bn( in->sig.data,                 in->sig.len/2, NULL );
-    ps = BN_bin2bn( in->sig.data + in->sig.len/2, in->sig.len/2, NULL );
+    pr = BN_bin2bn( in->sig.data,                 (int) in->sig.len/2, NULL );
+    ps = BN_bin2bn( in->sig.data + in->sig.len/2, (int) in->sig.len/2, NULL );
 
-    if( ec && md_ctx && pkey && ecdsa_sig
-        /* Setup the pkey */
-        && (1 == EVP_PKEY_assign_EC_KEY(pkey, ec))
-        && (NULL == (ec = NULL)) /* pkey owns the ec memory, don't free it. */
-        && (NULL != (ctx = EVP_PKEY_CTX_new(pkey, NULL)))
+    /* Setup the pkey */
+    if( pkey && ec && (1 == EVP_PKEY_assign_EC_KEY(pkey, ec)) ) {
+        /* pkey owns the ec memory, don't free it. */
+        ec = NULL;
+        ctx = EVP_PKEY_CTX_new( pkey, NULL );
+    }
+
+    if( md_ctx && pkey && ecdsa_sig && ctx
         /* Setup the sha digest buffer */
         && (1 == EVP_DigestInit_ex(md_ctx, sha, NULL))
         && (1 == EVP_DigestUpdate(md_ctx, in->full.data, in->full.len))
         && (1 == EVP_DigestFinal_ex(md_ctx, digest, &dig_len))
         /* Rebuild the signature in DEC format */
-        && (1 == ECDSA_SIG_set0(ecdsa_sig, pr, ps))
-        && (0 < (new_sig_len = i2d_ECDSA_SIG(ecdsa_sig, &new_sig)))
-        && (NULL == (pr = NULL)) /* We don't own the memory, don't free it. */
-        && (NULL == (ps = NULL)) /* We don't own the memory, don't free it. */
+        && (1 == ECDSA_SIG_set0(ecdsa_sig, pr, ps)) )
+    {
+        new_sig_len = i2d_ECDSA_SIG( ecdsa_sig, &new_sig );
+    }
+
+    if( 0 < new_sig_len ) {
+        pr = NULL;  /* We don't own the memory, don't free it. */
+        ps = NULL;  /* We don't own the memory, don't free it. */
+    }
+
+    if( ctx && new_sig && (0 < new_sig_len)
         && (1 == EVP_PKEY_verify_init(ctx))
         && (1 == EVP_PKEY_verify(ctx, new_sig, new_sig_len, digest, dig_len)) )
     {
@@ -145,7 +163,7 @@ cjwt_code_t verify_es( const EVP_MD *sha, struct sig_input *in )
 }
 
 
-cjwt_code_t verify_rsa( const EVP_MD *sha, struct sig_input *in, int padding )
+cjwt_code_t verify_rsa( const EVP_MD *sha, const struct sig_input *in, int padding )
 {
     cjwt_code_t rv = CJWTE_SIGNATURE_VALIDATION_FAILED;
     EVP_MD_CTX* md_ctx = NULL;
