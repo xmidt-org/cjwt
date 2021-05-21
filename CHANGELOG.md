@@ -9,10 +9,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v1.0.4]
 - Move to use internal base64 decoding with stricter processing rules
-- Major refactor to use a specified length and not '\0' terminated strings.
-- Due to some of the major changes, it's worth making a few other API impacting
-  changes and bumping to a 2.0.0 release.
+- Major refactor to use a specified length and not '\0' terminated strings internally.
+- A number of failures that may not have been detected now have tests and are covered.
+- Bridge the new implementation to use the existing API.
 
 ## [v1.0.3]
 - Move to use Github Actions for building
