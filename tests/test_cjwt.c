@@ -99,7 +99,7 @@ test_case_t test_list[] = {
     { "ES512 NULL secret", "es512.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
 
     /* These are some nefarious focused tests */
-    { "Try 5 section",     "try_5.inv",   NULL,            "hs256-secret", CJWTE_SIGNATURE_MISSING           },
+    { "Try 5 section",     "try_5.inv",   NULL,            "hs256-secret", CJWTE_INVALID_SECTIONS            },
     { "Try 4 section",     "try_4.inv",   NULL,            "hs256-secret", CJWTE_INVALID_SECTIONS            },
     { "Try 2 section",     "try_2.inv",   NULL,            "hs256-secret", CJWTE_INVALID_SECTIONS            },
     { "Try 1 section",     "try_1.inv",   NULL,            "hs256-secret", CJWTE_HEADER_MISSING              },
@@ -744,7 +744,7 @@ void test_cjwt (void)
     CU_ASSERT( CJWTE_SIGNATURE_MISSING == result );
 
     result = cjwt_decode( bad_5group, strlen(bad_5group), 0, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_SIGNATURE_MISSING == result );
+    CU_ASSERT( CJWTE_INVALID_SECTIONS == result );
 }
 
 

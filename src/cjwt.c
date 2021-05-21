@@ -334,6 +334,25 @@ static cjwt_code_t verify_signature( const cjwt_t *jwt,
 }
 
 
+static cjwt_code_t verify_time_windows( const cjwt_t *jwt, uint32_t options,
+                                        int64_t time, int64_t skew )
+{
+    if( OPT_ALLOW_ANY_TIME == (OPT_ALLOW_ANY_TIME & options) ) {
+        return CJWTE_OK;
+    }
+
+    if( jwt->nbf && ((time + skew) < *(jwt->nbf)) ) {
+        return CJWTE_TIME_BEFORE_NBF;
+    }
+
+    if( jwt->exp && (*(jwt->exp) < (time - skew)) ) {
+        return CJWTE_TIME_AFTER_EXP;
+    }
+
+    return CJWTE_OK;
+}
+
+
 /**
  * validates jwt token and extracts data
  */
@@ -355,9 +374,8 @@ cjwt_code_t cjwt_decode( const char *encoded, size_t enc_len, uint32_t options,
         return CJWTE_HEADER_MISSING;
     }
 
-    if( (3 != sections.count) &&    /* JWS */
-        (5 != sections.count) )     /* JWE */
-    {
+    /* JWS has 3 sections, JWE has 5, only JWS is supported today. */
+    if( 3 != sections.count ) {
         return CJWTE_INVALID_SECTIONS;
     }
 
@@ -384,11 +402,10 @@ cjwt_code_t cjwt_decode( const char *encoded, size_t enc_len, uint32_t options,
     }
 
     if( out->header.alg != alg_none ) {
-        const struct section *sig = NULL;
+        const struct section *sig = &sections.sections[2];
         size_t signed_len = 0;
         
-        sig = &sections.sections[2];
-        if( 3 != sections.count || (0 == sig->len)) {
+        if( 0 == sig->len ) {
             rv = CJWTE_SIGNATURE_MISSING;
             goto invalid;
         }
@@ -405,15 +422,7 @@ cjwt_code_t cjwt_decode( const char *encoded, size_t enc_len, uint32_t options,
         goto invalid;
     }
 
-    if( OPT_ALLOW_ANY_TIME != (OPT_ALLOW_ANY_TIME & options) ) {
-        if( out->nbf && ((time + skew) < *(out->nbf)) ) {
-            rv = CJWTE_TIME_BEFORE_NBF;
-        }
-
-        if( out->exp && (*(out->exp) < (time - skew)) ) {
-            rv = CJWTE_TIME_AFTER_EXP;
-        }
-    }
+    rv = verify_time_windows( out, options, time, skew );
 
 invalid:
 
