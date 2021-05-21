@@ -4,7 +4,8 @@
 target_sources(cjwt
     PRIVATE
         cjwt.c
-        b64.c
+        jws_evp_openssl.c
+        utils.c
 )
 
 configure_file(cjwtver.h.in
