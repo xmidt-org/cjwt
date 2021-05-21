@@ -22,7 +22,7 @@ jobs:
     - name: Install packages
       run: |
         sudo apt update
-        sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev gcovr
+        sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcjson-dev libcurl4-openssl-dev libcunit1-dev gcovr
  
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1

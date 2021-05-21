@@ -1,5 +1,8 @@
-// SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC
-// SPDX-License-Identifier: Apache-2.0
+/* SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC */
+/* SPDX-License-Identifier: Apache-2.0 */
+#ifndef __CJWT_H__
+#define __CJWT_H__
+
 #include <stdint.h>
 #include <time.h>
 #include <cjson/cJSON.h>
@@ -14,8 +17,14 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
+
+/**
+ * The jwt defined algorithms.
+ */
 typedef enum {
-    alg_none = 0,
+    alg_none = 0,   /* Only allowed if an option is set to prevent dangerous
+                     * conditions where an attacker could bypass security
+                     * checks.  DO NOT USE THIS IN A PRODUCTION ENVIRONMENT. */
     alg_es256,
     alg_es384,
     alg_es512,
@@ -28,7 +37,7 @@ typedef enum {
     alg_rs256,
     alg_rs384,
     alg_rs512,
-    num_algorithms
+    num_algorithms  /* never use! */
 } cjwt_alg_t;
 
 typedef struct {
@@ -119,3 +128,5 @@ int cjwt_destroy( cjwt_t **jwt );
  *  @retval  enum of algorithm, -1 if invalid
  */
 int cjwt_alg_str_to_enum( const char *alg_str );
+
+#endif

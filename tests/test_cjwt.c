@@ -189,7 +189,7 @@ void test_case (unsigned _i )
     jwt_bytes = read_file( jwt_fname, jwt_buf, sizeof( jwt_buf ) );
 
     if( jwt_bytes > 0 ) {
-        result = cjwt_decode( jwt_buf, 0, &jwt, ( const uint8_t * )key_str, key_len );
+        result = cjwt_decode( jwt_buf, OPT_ALLOW_ALG_NONE, &jwt, ( const uint8_t * )key_str, key_len );
     } else {
         result = jwt_bytes;
     }

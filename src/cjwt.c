@@ -1,46 +1,21 @@
 // SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC
 // SPDX-License-Identifier: Apache-2.0
-#include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <errno.h>
 #include <stdio.h>
 
 #include <cjson/cJSON.h>
+#include <trower-base64/base64.h>
 
-#include <openssl/hmac.h>
-#include <openssl/err.h>
-#include <openssl/sha.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
-#include <openssl/bio.h>
-
-#include "cjwt.h"
-#include "b64.h"
+#include "internal.h"
+#include "jws.h"
+#include "utils.h"
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-//#define _DEBUG
-#ifdef _DEBUG
-
-#define cjwt_error(...) printf(__VA_ARGS__)
-#define cjwt_warn(...)  printf(__VA_ARGS__)
-#define cjwt_info(...)  printf(__VA_ARGS__)
-#define cjwt_rsa_error() ERR_print_errors_fp(stdout)
-
-#else
-
-#define cjwt_error(...)
-#define cjwt_warn(...)
-#define cjwt_info(...)
-#define cjwt_rsa_error()
-
-#endif
-
-#define IS_RSA_ALG(alg) ((alg) > alg_ps512)
-
+/* none */
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
@@ -62,13 +37,12 @@
 /*----------------------------------------------------------------------------*/
 extern char *strdup(const char *s);
 
-
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 /* none */
 
-int cjwt_alg_str_to_enum( const char *alg_str )
+int alg_to_enum( const char *alg_str, cjwt_alg_t *alg )
 {
     struct alg_map {
         cjwt_alg_t alg;
@@ -89,711 +63,422 @@ int cjwt_alg_str_to_enum( const char *alg_str )
         { .alg = alg_rs384, .text = "RS384" },
         { .alg = alg_rs512, .text = "RS512" }
     };
-    size_t count, i;
-    count = sizeof( m ) / sizeof( struct alg_map );
 
-    for( i = 0; i < count; i++ ) {
-        if( !strcasecmp( alg_str, m[i].text ) ) {
-            return m[i].alg;
-        }
-    }
-
-    return -1;
-}
-
-
-inline static void cjwt_delete_child_json( cJSON* j, const char* s )
-{
-    if( j && cJSON_HasObjectItem( j, s ) ) {
-        cJSON_DeleteItemFromObject( j, s );
-    }
-}
-
-static void cjwt_delete_public_claims( cJSON* val )
-{
-    cjwt_delete_child_json( val, "iss" );
-    cjwt_delete_child_json( val, "sub" );
-    cjwt_delete_child_json( val, "aud" );
-    cjwt_delete_child_json( val, "jti" );
-    cjwt_delete_child_json( val, "exp" );
-    cjwt_delete_child_json( val, "nbf" );
-    cjwt_delete_child_json( val, "iat" );
-}
-
-static int cjwt_sign_sha_hmac( cjwt_t *jwt, unsigned char **out, const EVP_MD *alg,
-                               const char *in, int *out_len )
-{
-    unsigned char res[EVP_MAX_MD_SIZE];
-    unsigned int res_len;
-    cjwt_info( "string for signing : %s \n", in );
-    HMAC( alg, jwt->header.key, jwt->header.key_len,
-          ( const unsigned char * )in, strlen( in ), res, &res_len );
-    unsigned char *resptr = ( unsigned char * )malloc( res_len + 1 );
-
-    if( !resptr ) {
-        return ENOMEM;
-    }
-
-    memcpy( resptr, res, res_len );
-    resptr[res_len] = '\0';
-    *out = resptr;
-    *out_len = res_len;
-    return 0;
-}
-
-static int cjwt_sign( cjwt_t *cjwt, unsigned char **out, const char *in, int *out_len )
-{
-    switch( cjwt->header.alg ) {
-        case alg_none:
+    for( size_t i = 0; i < sizeof(m) / sizeof(struct alg_map); i++ ) {
+        if( !strcmp( alg_str, m[i].text ) ) {
+            *alg = m[i].alg;
             return 0;
-        case alg_hs256:
-            return cjwt_sign_sha_hmac( cjwt, out, EVP_sha256(), in, out_len );
-        case alg_hs384:
-            return cjwt_sign_sha_hmac( cjwt, out, EVP_sha384(), in, out_len );
-        case alg_hs512:
-            return cjwt_sign_sha_hmac( cjwt, out, EVP_sha512(), in, out_len );
-        default:
-            break;
-    }//switch
+        }
+    }
 
     return -1;
 }
 
-static RSA* cjwt_create_rsa( unsigned char *key, int key_len, int public )
+
+static void delete_public_claims( cJSON* json )
 {
-    RSA *rsa = NULL;
-    BIO *keybio ;
+    const char *claims[] = { "iss",
+                             "sub",
+                             "aud",
+                             "jti",
+                             "exp",
+                             "nbf",
+                             "iat" };
 
-    if( key == NULL ) {
-        cjwt_error( "invalid rsa key\n" );
-        goto rsa_end;
+    for( size_t i = 0; i < sizeof(claims)/sizeof(char*); i++ ) {
+        cJSON_DeleteItemFromObjectCaseSensitive( json, claims[i] );
     }
-
-    keybio = BIO_new_mem_buf( key, key_len );
-
-    if( keybio == NULL ) {
-        cjwt_error( "BIO creation for key failed\n" );
-        goto rsa_end;
-    }
-
-    if( public ) {
-        rsa = PEM_read_bio_RSA_PUBKEY( keybio, &rsa, NULL, NULL );
-    } else {
-        rsa = PEM_read_bio_RSAPrivateKey( keybio, &rsa, NULL, NULL );
-    }
-
-    if( rsa == NULL ) {
-        cjwt_rsa_error();
-    }
-    BIO_free (keybio);
-
-rsa_end:
-    return rsa;
-}
-
-static int cjwt_verify_rsa( cjwt_t *jwt, const char *p_enc, const char *p_sigb64 )
-{
-    int ret = EINVAL;
-    RSA *rsa = NULL;
-    size_t enc_len = 0, sig_desize = 0;
-    uint8_t *decoded_sig = NULL;
-    unsigned char digest[EVP_MAX_MD_SIZE];
-
-    if( jwt->header.key_len == 0 ) {
-        cjwt_error( "invalid rsa key\n" );
-        return EINVAL;
-    }
-
-    rsa = cjwt_create_rsa( jwt->header.key, jwt->header.key_len, 1 );
-
-    if( rsa == NULL ) {
-        cjwt_error( "key to rsa conversion failed\n" );
-        return EINVAL;
-    }
-
-    //decode p_sigb64
-    decoded_sig = b64_url_decode( p_sigb64, strlen(p_sigb64), &sig_desize );
-
-    cjwt_info( "----------------- signature ----------------- \n" );
-    cjwt_info( "Bytes = %d\n", ( int )sig_desize );
-    cjwt_info( "--------------------------------------------- \n" );
-
-    if( !sig_desize ) {
-        cjwt_error( "b64url_decode failed\n" );
-        goto end;
-    }
-
-    //verify rsa
-    enc_len = strlen( p_enc );
-
-    switch( jwt->header.alg ) {
-        case alg_rs256:
-            SHA256( ( const unsigned char* ) p_enc, enc_len, digest );
-            ret = RSA_verify
-                  ( NID_sha256, digest, SHA256_DIGEST_LENGTH, decoded_sig,
-                    ( unsigned int ) sig_desize, rsa );
-            break;
-        case alg_rs384:
-            SHA384( ( const unsigned char * ) p_enc, enc_len, digest );
-            ret = RSA_verify
-                  ( NID_sha384, digest, SHA384_DIGEST_LENGTH, decoded_sig,
-                    ( unsigned int ) sig_desize, rsa );
-            break;
-        case alg_rs512:
-            SHA512( ( const unsigned char* ) p_enc, enc_len, digest );
-            ret = RSA_verify
-                  ( NID_sha512, digest, SHA512_DIGEST_LENGTH, decoded_sig,
-                    ( unsigned int ) sig_desize, rsa );
-            break;
-        default:
-            cjwt_error( "invalid rsa algorithm\n" );
-            ret = EINVAL;
-            break;
-    }
-
-end:
-    RSA_free( rsa );
-    free( decoded_sig );
-
-    if( ret ==  1 ) {
-        return 0;
-    }
-
-    cjwt_rsa_error();
-    return EINVAL;
-}
-
-static int cjwt_verify_signature( cjwt_t *p_jwt, char *p_in, const char *p_sign )
-{
-    int ret = 0;
-    int sz_signed = 0;
-    unsigned char* signed_out = NULL;
-    size_t sz_decoded = 0;
-    uint8_t *signed_dec;
-
-    if( !p_jwt || !p_in || !p_sign ) {
-        ret = EINVAL;
-        goto end;
-    }
-
-    if( IS_RSA_ALG( p_jwt->header.alg ) ) {
-        ret = cjwt_verify_rsa( p_jwt, p_in, p_sign );
-        goto end;
-    }
-
-    //sign
-    ret = cjwt_sign( p_jwt, &signed_out, p_in, &sz_signed );
-
-    if( ret ) {
-        ret = EINVAL;
-        goto end;
-    }
-
-    //decode signature from input token
-    signed_dec = b64_url_decode( p_sign, strlen(p_sign), &sz_decoded );
-
-    if( !signed_dec ) {
-        ret = EINVAL;
-        goto err_match;
-    }
-
-    cjwt_info( "Signature length : enc %d, signature %zd\n",
-                sz_signed, sz_decoded );
-    cjwt_info( "signed token : %s\n", signed_out );
-    cjwt_info( "expected token signature  %s\n", signed_dec );
-
-    if( (size_t) sz_signed != sz_decoded ) {
-        cjwt_info( "Signature length mismatch: enc %d, signature %zd\n",
-                   sz_signed, sz_decoded );
-        ret = EINVAL;
-        goto err_match;
-    }
-
-    if( 0 != CRYPTO_memcmp(signed_out, signed_dec, sz_decoded) ) {
-        ret = EINVAL;
-    }
-
-err_match:
-    free( signed_dec );
-    free( signed_out );
-end:
-    return ret;
 }
 
 
-static int cjwt_update_payload( cjwt_t *p_cjwt, char *p_decpl )
+static cjwt_code_t process_string( const cJSON *json, const char *name, char **dest )
 {
-    cJSON*  j_val = NULL;
-   
-    if( !p_cjwt || !p_decpl ) {
-        return EINVAL;
-    }
+    const cJSON *val = cJSON_GetObjectItemCaseSensitive( json, name );
 
-    //create cJSON object
-    cJSON *j_payload = cJSON_Parse( ( char* )p_decpl );
-
-    if( !j_payload ) {
-        // The data is probably not json vs. memory allocation error.
-        return EINVAL;
-    }
-
-    //extract data
-    cjwt_info( "Json  = %s\n", cJSON_Print( j_payload ) );
-    cjwt_info( "--------------------------------------------- \n\n" );
-    //iss
-    j_val = cJSON_GetObjectItem( j_payload, "iss" );
-
-    if( j_val ) {
-        if( p_cjwt->iss ) {
-            free( p_cjwt->iss );
-            p_cjwt->iss = NULL;
+    if( val ) {
+        if( val->type != cJSON_String ) {
+            return CJWTE_PAYLOAD_EXPECTED_STRING;
         }
 
-        p_cjwt->iss = strdup(j_val->valuestring);
-
-        if( !p_cjwt->iss ) {
-            cJSON_Delete( j_payload );
-            return ENOMEM;
+        *dest = strdup( val->valuestring );
+        if( !(*dest) ) {
+            return CJWTE_OUT_OF_MEMORY;
         }
     }
 
-    //sub
-    j_val = cJSON_GetObjectItem( j_payload, "sub" );
+    return CJWTE_OK;
+}
 
-    if( j_val ) {
-        if( p_cjwt->sub ) {
-            free( p_cjwt->sub );
-            p_cjwt->sub = NULL;
-        }
+static cjwt_code_t process_time( const cJSON *json, const char *name, int64_t **dest )
+{
+    const cJSON *val = cJSON_GetObjectItemCaseSensitive( json, name );
 
-        p_cjwt->sub = strdup(j_val->valuestring);
-
-        if( !p_cjwt->sub ) {
-            cJSON_Delete( j_payload );
-            return ENOMEM;
-        }
-    }
-
-    //aud
-    j_val = cJSON_GetObjectItem( j_payload, "aud" );
-
-    if( j_val ) {
-        if( j_val->type == cJSON_Object ) {
-            //array of strings
-            cJSON*  j_tmp = NULL;
-            int     cnt, i = 0;
-            char    **ptr_values = NULL;
-            char    *str_val = NULL;
-            cnt = cJSON_GetArraySize( j_val->child );
-            ptr_values = ( char** ) malloc( ( cnt ) * sizeof( char* ) );
-
-            if( !ptr_values ) {
-                cJSON_Delete( j_payload );
-                return ENOMEM;
+    if( val ) {
+        if( val->type == cJSON_Number ) {
+            *dest = malloc( sizeof(int64_t) );
+            if( !(*dest) ) {
+                return CJWTE_OUT_OF_MEMORY;
             }
 
-            for( i = 0; i < cnt; i++ ) {
-                j_tmp = cJSON_GetArrayItem( j_val->child, i );
-                cjwt_info( "aud[%d] Json  = %s,type=%d,val=%s\n", i, cJSON_Print( j_tmp ), j_tmp->type, j_tmp->valuestring );
-
-                if( j_tmp->type == cJSON_String ) {
-                    str_val =  strdup(j_tmp->valuestring);
-
-                    if( !str_val ) {
-                        cJSON_Delete( j_payload );
-                        i--;
-
-                        while( i ) {
-                            free( ptr_values[--i] );
-                        }
-                        
-                        free (ptr_values);
-                        return ENOMEM;
-                    }
-
-                    ptr_values[i] = str_val;
-                }
-            }//for
-
-            p_cjwt_aud_list aud_new = malloc( sizeof( cjwt_aud_list_t ) );
-
-            if( !aud_new ) {
-                cJSON_Delete( j_payload );
-
-                while( cnt ) {
-                    free( ptr_values[--cnt] );
-                }
-
-                free (ptr_values);
-                return ENOMEM;
-            }
-
-            aud_new->count = cnt;
-            aud_new->names = ptr_values;
-            p_cjwt->aud = aud_new;
-        }
-    }
-
-    //jti
-    j_val = cJSON_GetObjectItem( j_payload, "jti" );
-
-    if( j_val ) {
-        if( p_cjwt->jti ) {
-            free( p_cjwt->jti );
-            p_cjwt->jti = NULL;
-        }
-
-        p_cjwt->jti = strdup(j_val->valuestring);
-
-        if( !p_cjwt->jti ) {
-            cJSON_Delete( j_payload );
-            return ENOMEM;
-        }
-    }
-
-    //exp
-    j_val = cJSON_GetObjectItem( j_payload, "exp" );
-
-    if( j_val ) {
-        cjwt_info( "exp Json  = %s,type=%d,int=%d,double=%f\n", cJSON_Print( j_val ), j_val->type, j_val->valueint, j_val->valuedouble );
-
-        if( j_val->type == cJSON_Number ) {
-            p_cjwt->exp.tv_sec = j_val->valueint;
-            p_cjwt->exp.tv_nsec = 0;
-        }
-    }
-
-    //nbf
-    j_val = cJSON_GetObjectItem( j_payload, "nbf" );
-
-    if( j_val ) {
-        cjwt_info( "nbf Json  = %s,type=%d,int=%d,double=%f\n", cJSON_Print( j_val ), j_val->type, j_val->valueint, j_val->valuedouble );
-
-        if( j_val->type == cJSON_Number ) {
-            p_cjwt->nbf.tv_sec = j_val->valueint;
-            p_cjwt->nbf.tv_nsec = 0;
-        }
-    }
-
-    //iat
-    j_val = cJSON_GetObjectItem( j_payload, "iat" );
-
-    if( j_val ) {
-        cjwt_info( "iat Json  = %s,type=%d,int=%d,double=%f\n", cJSON_Print( j_val ), j_val->type, j_val->valueint, j_val->valuedouble );
-
-        if( j_val->type == cJSON_Number ) {
-            p_cjwt->iat.tv_sec = j_val->valueint;
-            p_cjwt->iat.tv_nsec = 0;
-        }
-    }
-
-    //private_claims
-    cJSON* j_new = cJSON_Duplicate( j_payload, 1 );
-
-    if( j_new ) {
-        cjwt_delete_public_claims( j_new );
-        cjwt_info( "private claims count = %d\n", cJSON_GetArraySize( j_new ) );
-
-        if( cJSON_GetArraySize( j_new ) ) {
-            //cjwt_info( "private claims  = %s\n", cJSON_Print( j_new ) );
-            if( p_cjwt->private_claims ) {
-                cJSON_Delete( p_cjwt->private_claims );
-            }
-
-            p_cjwt->private_claims = j_new;
+            **dest = val->valueint;
         } else {
-            cJSON_Delete ( j_new );
+            return CJWTE_PAYLOAD_EXPECTED_NUMBER;
         }
     }
 
-    //destroy cJSON object
-    cJSON_Delete( j_payload );
-    return 0;
+    return CJWTE_OK;
 }
 
-static int cjwt_update_header( cjwt_t *p_cjwt, char *p_dechead )
-    // The data is probably not json vs. memory allocation error.
+static cjwt_code_t process_aud( const cJSON *json, __cjwt_t *cjwt )
 {
-    if( !p_cjwt || !p_dechead ) {
-        return EINVAL;
+    const cJSON *tmp = NULL;
+    const cJSON *aud = NULL;
+
+    aud = cJSON_GetObjectItemCaseSensitive( json, "aud" );
+
+    if( !aud ) {
+        return CJWTE_OK;
     }
 
-    //create cJSON object
-    cJSON *j_header = cJSON_Parse( ( char* )p_dechead );
+    if( cJSON_Array == aud->type ) {
+        cjwt->aud.count = cJSON_GetArraySize( aud );
+        cjwt->aud.names = calloc( cjwt->aud.count, sizeof(char*) );
 
-    if( !j_header ) {
-        // The data is probably not json vs. memory allocation error.
-        return EINVAL;
-    }
-
-    cjwt_info( "Json  = %s\n", cJSON_Print( j_header ) );
-    cjwt_info( "--------------------------------------------- \n\n" );
-    //extract data
-    cJSON* j_typ = cJSON_GetObjectItem( j_header, "typ" );
-
-    if( !j_typ || strcmp( j_typ->valuestring, "JWT" ) ) {
-        cjwt_info( "may not be a JWT token\n" );
-    }
-
-    cJSON* j_alg = cJSON_GetObjectItem( j_header, "alg" );
-
-    if( j_alg ) {
-        int alg;
-
-        alg = cjwt_alg_str_to_enum( j_alg->valuestring );
-        if( -1 == alg ) {
-            cJSON_Delete( j_header );
-            return ENOTSUP;
-        }
-        p_cjwt->header.alg = alg;
-    }
-
-    //destroy cJSON object
-    cJSON_Delete( j_header );
-    return 0;
-}
-
-static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
-{
-    int ret, sz_payload;
-    size_t out_size = 0;
-    uint8_t *decoded_pl;
-
-    if( !p_cjwt || !p_payload ) {
-        return EINVAL;
-    }
-
-    sz_payload = strlen( p_payload );
-
-    decoded_pl = b64_url_decode( p_payload, sz_payload, &out_size );
-    cjwt_info( "----------------- payload ------------------- \n" );
-    cjwt_info( "Payload Size = %zd , Decoded size = %zd\n", sz_payload, out_size );
-    cjwt_info( "Bytes = %zd\n", out_size );
-
-    if( !out_size ) {
-        ret = EINVAL;
-        goto end;
-    }
-
-    cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_pl );
-    ret = cjwt_update_payload( p_cjwt, ( char* )decoded_pl );
-end:
-    free( decoded_pl );
-    return ret;
-}
-
-static int cjwt_parse_header( cjwt_t *p_cjwt, char *p_head )
-{
-    size_t sz_head = 0;
-    int ret = 0;
-    uint8_t *decoded_head;
-    size_t out_size = 0;
-
-    if( !p_cjwt || !p_head ) {
-        return EINVAL;
-    }
-
-    sz_head = strlen( p_head );
-    decoded_head = b64_url_decode( p_head, sz_head, &out_size );
-    cjwt_info( "----------------- header -------------------- \n" );
-    cjwt_info( "Header Size = %zd , Decoded size = %zd\n", sz_head, out_size );
-
-    if( !out_size ) {
-        ret = EINVAL;
-        goto end;
-    }
-
-    cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_head );
-    ret = cjwt_update_header( p_cjwt, ( char* )decoded_head );
-end:
-    free( decoded_head );
-    return ret;
-}
-
-
-static int cjwt_update_key( cjwt_t *p_cjwt, const uint8_t *key, size_t key_len )
-{
-    int ret = 0;
-
-    if( ( NULL != key ) && ( key_len > 0 ) ) {
-        p_cjwt->header.key = malloc( key_len );
-
-        if( !p_cjwt->header.key ) {
-            ret = ENOMEM;
-            return ret;
+        if( !cjwt->aud.names ) {
+            return CJWTE_OUT_OF_MEMORY;
         }
 
-        memcpy( p_cjwt->header.key, key, key_len );
-        p_cjwt->header.key_len = key_len;
+        for( int i = 0; i < cjwt->aud.count; i++ ) {
+            tmp = cJSON_GetArrayItem( aud, i );
+
+            if( tmp->type != cJSON_String ) {
+                return CJWTE_PAYLOAD_EXPECTED_STRING;
+            }
+
+            cjwt->aud.names[i] = strdup( tmp->valuestring );
+            if( !cjwt->aud.names[i] ) {
+                return CJWTE_OUT_OF_MEMORY;
+            }
+        }
+    } else if( cJSON_String == aud->type ) {
+        cjwt->aud.count = 1;
+        cjwt->aud.names = calloc( cjwt->aud.count, sizeof(char*) );
+
+        if( !cjwt->aud.names ) {
+            return CJWTE_OUT_OF_MEMORY;
+        }
+
+        cjwt->aud.names[0] = strdup( aud->valuestring );
+        if( !cjwt->aud.names[0] ) {
+            return CJWTE_OUT_OF_MEMORY;
+        }
+    } else {
+        return CJWTE_PAYLOAD_EXPECTED_STRING;
     }
 
-    return ret;
+    return CJWTE_OK;
+}
+
+static cjwt_code_t process_payload( __cjwt_t *cjwt, const char *payload, size_t len )
+{
+    cjwt_code_t rv = CJWTE_OK;
+    size_t decoded_len = 0;
+    char *decoded = NULL;
+    cJSON *json = NULL;
+
+    decoded = (char*) b64url_decode_with_alloc( (const uint8_t*) payload, len,
+                                                &decoded_len );
+    if( !decoded ) {
+        return CJWTE_PAYLOAD_INVALID_BASE64;
+    }
+
+    json = cJSON_ParseWithLength( decoded, decoded_len );
+    if( !json ) {
+        free( decoded );
+        return CJWTE_PAYLOAD_INVALID_JSON;
+    }
+
+    rv |= process_string( json, "iss", &cjwt->iss );
+    rv |= process_string( json, "sub", &cjwt->sub );
+    rv |= process_string( json, "jti", &cjwt->jti );
+
+    rv |= process_time( json, "exp", &cjwt->exp );
+    rv |= process_time( json, "nbf", &cjwt->nbf );
+    rv |= process_time( json, "iat", &cjwt->iat );
+
+    rv |= process_aud( json, cjwt );
+
+    /* The private_claims either is assigned the json blob or deletes it. */
+    delete_public_claims( json );
+
+    if( cJSON_GetArraySize( json ) ) {
+        cjwt->private_claims = json;
+    } else {
+        cJSON_Delete( json );
+    }
+
+    free( decoded );
+    return rv;
+}
+
+
+static cjwt_code_t process_header_json( __cjwt_t *cjwt, uint32_t options,
+                                        cJSON *json )
+{
+    const cJSON *alg = NULL;
+    const cJSON *typ = NULL;
+
+    alg = cJSON_GetObjectItemCaseSensitive( json, "alg" );
+    if( !alg ) {
+        return CJWTE_HEADER_MISSING_ALG;
+    }
+
+    if( alg->type != cJSON_String ) {
+        return CJWTE_HEADER_UNSUPPORTED_ALG;
+    }
+
+    if( 0 != alg_to_enum( alg->valuestring, &cjwt->header.alg ) ) {
+        return CJWTE_HEADER_UNSUPPORTED_ALG;
+    }
+
+    if( (alg_none == cjwt->header.alg) &&
+        (0 == (OPT_ALLOW_ALG_NONE & options)) )
+    {
+        return CJWTE_HEADER_UNSUPPORTED_ALG;
+    }
+
+
+    typ = cJSON_GetObjectItemCaseSensitive( json, "typ" );
+    if( typ && (0 == (OPT_ALLOW_ANY_TYP & options)) ) {
+        const char *s = typ->valuestring;
+
+        if( typ->type != cJSON_String ) {
+            return CJWTE_HEADER_UNSUPPORTED_TYP;
+        }
+
+        if( (('J' != s[0]) && ('j' != s[0])) ||
+            (('W' != s[1]) && ('w' != s[1])) ||
+            (('T' != s[2]) && ('t' != s[2])) || ('\0' != s[3]) )
+        {
+            return CJWTE_HEADER_UNSUPPORTED_TYP;
+        }
+    }
+
+    cJSON_DeleteItemFromObjectCaseSensitive( json, "alg" );
+    cJSON_DeleteItemFromObjectCaseSensitive( json, "typ" );
+
+    if( json->next || json->prev || json->child ) {
+        return CJWTE_HEADER_UNSUPPORTED_UNKNOWN;
+    }
+
+    return CJWTE_OK;
+}
+
+
+static cjwt_code_t process_header( __cjwt_t *cjwt, uint32_t options,
+                                   const char *header, size_t len )
+{
+    cjwt_code_t rv;
+    size_t decoded_len = 0;
+    char *decoded = NULL;
+    cJSON *json = NULL;
+
+    decoded = (char*) b64url_decode_with_alloc( (const uint8_t*) header, len,
+                                                &decoded_len );
+    if( !decoded ) {
+        return CJWTE_HEADER_INVALID_BASE64;
+    }
+
+    json = cJSON_ParseWithLength( decoded, decoded_len );
+    if( !json ) {
+        free( decoded );
+        return CJWTE_HEADER_INVALID_JSON;
+    }
+
+    rv = process_header_json( cjwt, options, json );
+
+    cJSON_Delete( json );
+    free( decoded );
+
+    return rv;
+}
+
+static cjwt_code_t verify_signature( const __cjwt_t *jwt,
+                                     const uint8_t *full, size_t full_len,
+                                     const char *enc_sig, size_t enc_sig_len,
+                                     const uint8_t *key,  size_t key_len )
+{
+    cjwt_code_t rv = CJWTE_OK;
+    struct sig_input in;
+    uint8_t *sig;
+    size_t sig_len;
+
+    sig = b64url_decode_with_alloc( (const uint8_t*) enc_sig,
+                                    enc_sig_len, &sig_len );
+    if( !sig ) {
+        return CJWTE_SIGNATURE_INVALID_BASE64;
+    }
+
+    in.full.data = full;
+    in.full.len  = full_len;
+    in.key.data  = key;
+    in.key.len   = key_len;
+    in.sig.len = sig_len;
+    in.sig.data = sig;
+
+
+    rv = jws_verify_signature( jwt, &in );
+
+    free( sig );
+    return rv;
+}
+
+
+static cjwt_code_t verify_time_windows( const __cjwt_t *jwt, uint32_t options,
+                                        int64_t time, int64_t skew )
+{
+    if( OPT_ALLOW_ANY_TIME == (OPT_ALLOW_ANY_TIME & options) ) {
+        return CJWTE_OK;
+    }
+
+    if( jwt->nbf && ((time + skew) < *(jwt->nbf)) ) {
+        return CJWTE_TIME_BEFORE_NBF;
+    }
+
+    if( jwt->exp && (*(jwt->exp) < (time - skew)) ) {
+        return CJWTE_TIME_AFTER_EXP;
+    }
+
+    return CJWTE_OK;
 }
 
 
 /**
  * validates jwt token and extracts data
  */
-int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
-                 const uint8_t *key, size_t key_len )
+cjwt_code_t __cjwt_decode( const char *encoded, size_t enc_len, uint32_t options,
+                           const uint8_t *key, size_t key_len,
+                           int64_t time, int64_t skew, __cjwt_t **jwt )
 {
-    int ret = 0;
-    char *payload, *signature;
-    ( void )options; //suppressing unused parameter warning
+    cjwt_code_t rv = CJWTE_OK;
+    struct split_jwt sections;
+    const struct section *header = NULL;
+    const struct section *payload = NULL;
 
-    //validate inputs
-    if( !encoded || !jwt ) {
-        cjwt_error( "null parameter\n" );
-        ret = EINVAL;
-        goto error;
+    if( !encoded || !jwt || !enc_len ) {
+        return CJWTE_INVALID_PARAMETERS;
     }
 
-    cjwt_info( "parameters cjwt_decode()\n encoded : %s\n options : %d\n", encoded, options );
-    //create copy
-    char *enc_token = malloc( strlen( encoded ) + 1 );
-
-    if( !enc_token ) {
-        cjwt_error( "memory alloc failed\n" );
-        ret = ENOMEM;
-        goto error;
+    if( split(encoded, enc_len, &sections) ) {
+        return CJWTE_HEADER_MISSING;
     }
 
-    strcpy( enc_token, encoded );
-
-    //tokenize the jwt token
-    for( payload = enc_token; payload[0] != '.'; payload++ ) {
-        if( payload[0] == '\0' ) {
-            cjwt_error( "Invalid jwt token,has only header\n" );
-            ret = EINVAL;
-            goto end;
-        }
+    /* JWS has 3 sections, JWE has 5, only JWS is supported today. */
+    if( 3 != sections.count ) {
+        return CJWTE_INVALID_SECTIONS;
     }
 
-    payload[0] = '\0';
-    payload++;
+    header = &sections.sections[0];
+    payload = &sections.sections[1];
 
-    for( signature = payload; signature[0] != '.'; signature++ ) {
-        if( signature[0] == '\0' ) {
-            cjwt_error( "Invalid jwt token,missing signature\n" );
-            ret = EINVAL;
-            goto end;
-        }
+    if( !header->len ) {
+        return CJWTE_HEADER_MISSING;
     }
 
-    signature[0] = '\0';
-    signature++;
-    //create cjson
-    cjwt_t *out = calloc( 1, sizeof(cjwt_t) );
+    if( !payload->len )  {
+        return CJWTE_PAYLOAD_MISSING;
+    }
 
+
+    __cjwt_t *out = calloc( 1, sizeof(__cjwt_t) );
     if( !out ) {
-        cjwt_error( "cjwt memory alloc failed\n" );
-        ret = ENOMEM;
-        goto end;
+        return CJWTE_OUT_OF_MEMORY;
     }
 
-    //populate key
-    ret = cjwt_update_key( out, key, key_len );
-
-    if( ret ) {
-        cjwt_error( "Failed to update key\n" );
-        goto invalid;
-    }
-
-    //parse header
-    ret = cjwt_parse_header( out, enc_token );
-
-    if( ret ) {
-        cjwt_error( "Invalid header\n" );
-        goto invalid;
-    }
-
-    //parse payload
-    ret = cjwt_parse_payload( out, payload );
-
-    if( ret ) {
-        cjwt_error( "Invalid payload\n" );
+    rv = process_header( out, options, header->data, header->len );
+    if( rv ) {
         goto invalid;
     }
 
     if( out->header.alg != alg_none ) {
-        enc_token[strlen( enc_token )] = '.';
-        //verify
-        ret = cjwt_verify_signature( out, enc_token, signature );
-
-        if( ret ) {
-            cjwt_error( "\nSignature authentication failed\n" );
+        const struct section *sig = &sections.sections[2];
+        size_t signed_len = 0;
+        
+        if( 0 == sig->len ) {
+            rv = CJWTE_SIGNATURE_MISSING;
             goto invalid;
         }
-
-        cjwt_info( "\nSignature authentication passed\n" );
+        signed_len = header->len + payload->len + 1;
+        rv = verify_signature( out, (const uint8_t*) encoded, signed_len,
+                               sig->data, sig->len, key, key_len );
+        if( rv ) {
+            goto invalid;
+        }
     }
+
+    rv = process_payload( out, payload->data, payload->len );
+    if( rv ) {
+        goto invalid;
+    }
+
+    rv = verify_time_windows( out, options, time, skew );
 
 invalid:
 
-    if( ret ) {
-        cjwt_destroy( &out );
-        *jwt = NULL;
+    if( rv ) {
+        __cjwt_destroy( out );
     } else {
         *jwt = out;
     }
 
-end:
-    free( enc_token );
-error:
-    return ret;
+    return rv;
 }
+
 
 /**
  * cleanup jwt object
  */
-int cjwt_destroy( cjwt_t **jwt )
+void __cjwt_destroy( __cjwt_t *jwt )
 {
-    cjwt_t *del = *jwt;
-    *jwt = NULL;
-
-    if( !del ) {
-        return 0;
-    }
-
-    if( del->header.key ) {
-        free(del->header.key);
-    }
-    del->header.key = NULL;
-
-    if( del->iss ) {
-        free( del->iss );
-    }
-
-    del->iss = NULL;
-
-    if( del->sub ) {
-        free( del->sub );
-    }
-
-    del->sub = NULL;
-
-    if( del->aud ) {
-        char** tmp = del->aud->names;
-        int cnt_lst = del->aud->count;
-        free( del->aud );
-        del->aud = NULL;
-
-        while( cnt_lst ) {
-            free( tmp[--cnt_lst] );
+    if( jwt ) {
+        if( jwt->iss ) {
+            free( jwt->iss );
         }
+
+        if( jwt->sub ) {
+            free( jwt->sub );
+        }
+
+        if( jwt->jti ) {
+            free( jwt->jti );
+        }
+
+        if( jwt->exp ) {
+            free( jwt->exp );
+        }
+
+        if( jwt->nbf ) {
+            free( jwt->nbf );
+        }
+
+        if( jwt->iat ) {
+            free( jwt->iat );
+        }
+
+        for( int i = 0; i < jwt->aud.count; i++ ) {
+            if( jwt->aud.names[i] ) {
+                free( jwt->aud.names[i] );
+            }
+        }
+
+        if( jwt->aud.names ) {
+            free( jwt->aud.names );
+        }
+
+        if( jwt->private_claims ) {
+            cJSON_Delete( jwt->private_claims );
+        }
+
+        free( jwt );
     }
-
-    if( del->jti ) {
-        free( del->jti );
-    }
-
-    del->jti = NULL;
-
-    if( del->private_claims ) {
-        cJSON_Delete( del->private_claims );
-    }
-
-    del->private_claims = NULL;
-    free (del);
-    return 0;
 }

@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: Apache-2.0
+---
+path_classifiers:
+    library:
+    test:
+        - tests
+    exclude:
+        - "**/_install/**"
+        - "**/_prefix/**"
+        - tests/input
+        - tests/new_input
+
+extraction:
+    cpp:
+        prepare:
+            packages:
+                - cmake
+                - libcjson
+                - libtrower-base64
+                - libopenssl
+        configure:
+            command:
+                - mkdir build
+                - cd build
+                - cmake ..
+        index:
+            build_command:
+                - cd build
+                - make
+
