@@ -8,7 +8,7 @@
 #include <cjson/cJSON.h>
 #include <trower-base64/base64.h>
 
-#include "cjwt.h"
+#include "internal.h"
 #include "jws.h"
 #include "utils.h"
 
@@ -42,7 +42,7 @@ extern char *strdup(const char *s);
 /*----------------------------------------------------------------------------*/
 /* none */
 
-int cjwt_alg_str_to_enum( const char *alg_str, cjwt_alg_t *alg )
+int alg_to_enum( const char *alg_str, cjwt_alg_t *alg )
 {
     struct alg_map {
         cjwt_alg_t alg;
@@ -129,7 +129,7 @@ static cjwt_code_t process_time( const cJSON *json, const char *name, int64_t **
     return CJWTE_OK;
 }
 
-static cjwt_code_t process_aud( const cJSON *json, cjwt_t *cjwt )
+static cjwt_code_t process_aud( const cJSON *json, __cjwt_t *cjwt )
 {
     const cJSON *tmp = NULL;
     const cJSON *aud = NULL;
@@ -179,7 +179,7 @@ static cjwt_code_t process_aud( const cJSON *json, cjwt_t *cjwt )
     return CJWTE_OK;
 }
 
-static cjwt_code_t process_payload( cjwt_t *cjwt, const char *payload, size_t len )
+static cjwt_code_t process_payload( __cjwt_t *cjwt, const char *payload, size_t len )
 {
     cjwt_code_t rv = CJWTE_OK;
     size_t decoded_len = 0;
@@ -222,7 +222,7 @@ static cjwt_code_t process_payload( cjwt_t *cjwt, const char *payload, size_t le
 }
 
 
-static cjwt_code_t process_header_json( cjwt_t *cjwt, uint32_t options,
+static cjwt_code_t process_header_json( __cjwt_t *cjwt, uint32_t options,
                                         cJSON *json )
 {
     const cJSON *alg = NULL;
@@ -237,7 +237,7 @@ static cjwt_code_t process_header_json( cjwt_t *cjwt, uint32_t options,
         return CJWTE_HEADER_UNSUPPORTED_ALG;
     }
 
-    if( 0 != cjwt_alg_str_to_enum( alg->valuestring, &cjwt->header.alg ) ) {
+    if( 0 != alg_to_enum( alg->valuestring, &cjwt->header.alg ) ) {
         return CJWTE_HEADER_UNSUPPORTED_ALG;
     }
 
@@ -275,7 +275,7 @@ static cjwt_code_t process_header_json( cjwt_t *cjwt, uint32_t options,
 }
 
 
-static cjwt_code_t process_header( cjwt_t *cjwt, uint32_t options,
+static cjwt_code_t process_header( __cjwt_t *cjwt, uint32_t options,
                                    const char *header, size_t len )
 {
     cjwt_code_t rv;
@@ -303,7 +303,7 @@ static cjwt_code_t process_header( cjwt_t *cjwt, uint32_t options,
     return rv;
 }
 
-static cjwt_code_t verify_signature( const cjwt_t *jwt,
+static cjwt_code_t verify_signature( const __cjwt_t *jwt,
                                      const uint8_t *full, size_t full_len,
                                      const char *enc_sig, size_t enc_sig_len,
                                      const uint8_t *key,  size_t key_len )
@@ -334,7 +334,7 @@ static cjwt_code_t verify_signature( const cjwt_t *jwt,
 }
 
 
-static cjwt_code_t verify_time_windows( const cjwt_t *jwt, uint32_t options,
+static cjwt_code_t verify_time_windows( const __cjwt_t *jwt, uint32_t options,
                                         int64_t time, int64_t skew )
 {
     if( OPT_ALLOW_ANY_TIME == (OPT_ALLOW_ANY_TIME & options) ) {
@@ -356,10 +356,9 @@ static cjwt_code_t verify_time_windows( const cjwt_t *jwt, uint32_t options,
 /**
  * validates jwt token and extracts data
  */
-cjwt_code_t cjwt_decode( const char *encoded, size_t enc_len, uint32_t options,
-                         const uint8_t *key, size_t key_len,
-                         int64_t time, int64_t skew,
-                         cjwt_t **jwt )
+cjwt_code_t __cjwt_decode( const char *encoded, size_t enc_len, uint32_t options,
+                           const uint8_t *key, size_t key_len,
+                           int64_t time, int64_t skew, __cjwt_t **jwt )
 {
     cjwt_code_t rv = CJWTE_OK;
     struct split_jwt sections;
@@ -391,7 +390,7 @@ cjwt_code_t cjwt_decode( const char *encoded, size_t enc_len, uint32_t options,
     }
 
 
-    cjwt_t *out = calloc( 1, sizeof(cjwt_t) );
+    __cjwt_t *out = calloc( 1, sizeof(__cjwt_t) );
     if( !out ) {
         return CJWTE_OUT_OF_MEMORY;
     }
@@ -427,7 +426,7 @@ cjwt_code_t cjwt_decode( const char *encoded, size_t enc_len, uint32_t options,
 invalid:
 
     if( rv ) {
-        cjwt_destroy( out );
+        __cjwt_destroy( out );
     } else {
         *jwt = out;
     }
@@ -439,7 +438,7 @@ invalid:
 /**
  * cleanup jwt object
  */
-void cjwt_destroy( cjwt_t *jwt )
+void __cjwt_destroy( __cjwt_t *jwt )
 {
     if( jwt ) {
         if( jwt->iss ) {

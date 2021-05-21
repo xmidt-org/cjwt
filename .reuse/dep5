@@ -14,3 +14,7 @@ License: Apache-2.0
 Files: tests/inputs/*
 Copyright: 2017-2021 Comcast Cable Communications Management, LLC
 License: Apache-2.0
+
+Files: tests/new_inputs/*
+Copyright: 2021 Comcast Cable Communications Management, LLC
+License: Apache-2.0

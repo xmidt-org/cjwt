@@ -3,6 +3,7 @@
 
 target_sources(cjwt
     PRIVATE
+        adapter.c
         cjwt.c
         jws_evp_openssl.c
         utils.c

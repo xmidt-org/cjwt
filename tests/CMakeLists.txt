@@ -23,7 +23,7 @@ add_test(NAME test_cjwt COMMAND ${MEMORY_CHECK} ./test_cjwt)
 add_executable(test_cjwt test_cjwt.c
                          ../src/cjwt.c
                          ../src/jws_evp_openssl.c
-                         #../src/jws_openssl.c
+                         ../src/adapter.c
                          ../src/utils.c)
 
 target_link_libraries (test_cjwt ${CUNIT_LIBRARIES}
@@ -33,3 +33,16 @@ target_link_libraries (test_cjwt ${CUNIT_LIBRARIES}
                                  -lm
                                  gcov
                                  rt)
+add_test(NAME test_cjwt_new COMMAND ${MEMORY_CHECK} ./test_cjwt_new)
+add_executable(test_cjwt_new test_cjwt_new.c
+                         ../src/cjwt.c
+                         ../src/jws_evp_openssl.c
+                         ../src/utils.c)
+
+target_link_libraries (test_cjwt_new ${CUNIT_LIBRARIES}
+                                     ${CJSON_LIBRARIES}
+                                     ${TROWER_LIBRARIES}
+                                     ${OPENSSL_LIBRARIES}
+                                     -lm
+                                     gcov
+                                     rt)

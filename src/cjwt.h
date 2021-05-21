@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC
-// SPDX-License-Identifier: Apache-2.0
+/* SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC */
+/* SPDX-License-Identifier: Apache-2.0 */
 #ifndef __CJWT_H__
 #define __CJWT_H__
 
 #include <stdint.h>
+#include <time.h>
 #include <cjson/cJSON.h>
 
 /*----------------------------------------------------------------------------*/
@@ -11,53 +12,11 @@
 /*----------------------------------------------------------------------------*/
 #define OPT_ALLOW_ALG_NONE  (1<<0)
 #define OPT_ALLOW_ANY_TIME  (1<<1)
-#define OPT_ALLOW_ANY_TYP   (1<<2)
 
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-
-/* All possible error codes from all the cjwt functions. Future versions may
- * return other values.
- *
- * Always add new return codes last.  Do not remove any.  The return codes
- * must remain the same.
- */
-typedef enum {
-    CJWTE_OK = 0,
-    CJWTE_INVALID_PARAMETERS,           /*  1 */
-    CJWTE_INVALID_SECTIONS,             /*  2 */
-    CJWTE_OUT_OF_MEMORY,                /*  3 */
-    CJWTE_LIBRARY_BUG_SHA,              /*  4 */
-    CJWTE_LIBRARY_BUG_RSA,              /*  5 */
-    CJWTE_HEADER_MISSING,               /*  6 */
-    CJWTE_HEADER_INVALID_BASE64,        /*  7 */
-    CJWTE_HEADER_INVALID_JSON,          /*  8 */
-    CJWTE_HEADER_MISSING_ALG,           /*  9 */
-    CJWTE_HEADER_UNSUPPORTED_ALG,       /* 10 */
-    CJWTE_PAYLOAD_MISSING,              /* 11 */
-    CJWTE_PAYLOAD_INVALID_BASE64,       /* 12 */
-    CJWTE_PAYLOAD_INVALID_JSON,         /* 13 */
-    CJWTE_PAYLOAD_AUD_NOT_VALID,        /* 14 */
-    CJWTE_PAYLOAD_EXPECTED_STRING,      /* 15 */
-    CJWTE_PAYLOAD_EXPECTED_NUMBER,      /* 16 */
-    CJWTE_SIGNATURE_MISSING,            /* 17 */
-    CJWTE_SIGNATURE_INVALID_BASE64,     /* 18 */
-    CJWTE_SIGNATURE_UNSUPPORTED_ALG,    /* 19 */
-    CJWTE_SIGNATURE_VALIDATION_FAILED,  /* 20 */
-    CJWTE_SIGNATURE_MISSING_KEY,        /* 21 */
-    CJWTE_SIGNATURE_INVALID_KEY,        /* 22 */
-    CJWTE_TIME_BEFORE_NBF,              /* 23 */
-    CJWTE_TIME_AFTER_EXP,               /* 24 */
-    CJWTE_HEADER_UNSUPPORTED_TYP,       /* 25 */
-    CJWTE_HEADER_UNSUPPORTED_UNKNOWN,   /* 26 */
-    CJWTE_KEY_TOO_LARGE,                /* 27 */
-    CJWTE_SIGNATURE_KEY_TOO_LARGE,      /* 28 */
-
-    CJWTE_LAST  /* never use! */
-} cjwt_code_t;
-
 
 /**
  * The jwt defined algorithms.
@@ -78,12 +37,13 @@ typedef enum {
     alg_rs256,
     alg_rs384,
     alg_rs512,
-
-    alg_last    /* never use! */
+    num_algorithms  /* never use! */
 } cjwt_alg_t;
 
 typedef struct {
-    cjwt_alg_t alg;
+    cjwt_alg_t      alg;
+    unsigned char   *key;
+    int             key_len;
 
     /* Unsupported:
      *  jku
@@ -92,6 +52,7 @@ typedef struct {
      *  x5c
      *  x5t
      *  x5ts256
+     *  type
      *  cty
      *  crit
      */
@@ -100,7 +61,7 @@ typedef struct {
 typedef struct cjwt_aud_list {
     int  count;
     char **names;
-} cjwt_aud_list_t;
+} cjwt_aud_list_t, *p_cjwt_aud_list;
 
 typedef struct {
     cjwt_header_t header;
@@ -108,14 +69,15 @@ typedef struct {
     char *iss;
     char *sub;
     char *jti;
+    p_cjwt_aud_list aud;
 
-    cjwt_aud_list_t aud;
-
-    int64_t *exp;
-    int64_t *nbf;
-    int64_t *iat;
+    struct timespec exp;
+    struct timespec nbf;
+    struct timespec iat;
 
     cJSON *private_claims;
+
+    void *internal_use_only;
 } cjwt_t;
 
 /*----------------------------------------------------------------------------*/
@@ -127,29 +89,24 @@ typedef struct {
  *
  *  @note This function allocates memory associated with the output jwt that
  *        must be freed.  cjwt_destroy() must be called to destroy the object
- *        when it is no longer needed.
+ *        when we are done with it.
  *
- *  @note This code defaults secure so `alg_none` is not allowed unless
- *        OPT_ALLOW_ALG_NONE is specified as an option.
- *  @note This code defaults strict so only claims with a valid time window
- *        are accepted unless OPT_ALLOW_ANY_TIME is specified as an option.
+ *  @note This function does not
  *
- *  @param text     [IN]  the original JWT text
- *  @param text_len [IN]  length of the encoded JWT bytes
- *  @param options  [IN]  a bitmask of the options
- *  @param key      [IN]  the public key to use for validating the signature
- *  @param key_len  [IN]  the length of the key in bytes
- *  @param time     [IN]  the time to use for evaluation of time based claims
- *  @param skew     [IN]  the allowed time scew to permit in seconds
- *  @param jwt      [OUT] the resulting JWT if found to be valid,
- *                        set to NULL if not successful
+ *  @param encoded [IN]  the incoming encoded JWT (MUST be '\0' terminated string)
+ *  @param options [IN]  a bitmask of the options
+ *  @param jwt     [OUT] the resulting JWT if found to be valid,
+ *                       set to NULL if not successful
+ *  @param key     [IN]  the public key to use for validating the signature
+ *  @param key_len [IN]  the length of the key in bytes
  *
- *  @return  CJWTE_OK if successful, reason for failure otherwise
+ *  @retval  0       successful
+ *  @retval  EINVAL  invalid jwt format or mismatched key
+ *  @retval  ENOMEM  unable to allocate needed memory
+ *  @retval  ENOTSUP unsupported algorithm
  */
-cjwt_code_t cjwt_decode( const char *text, size_t text_len, uint32_t options,
-                         const uint8_t *key, size_t key_len,
-                         int64_t time, int64_t skew,
-                         cjwt_t **jwt );
+int cjwt_decode( const char *encoded, unsigned int options, cjwt_t **jwt,
+                 const uint8_t *key, size_t key_len );
 
 /**
  *  The function to free cjwt object
@@ -160,6 +117,16 @@ cjwt_code_t cjwt_decode( const char *text, size_t text_len, uint32_t options,
  *
  *  @retval   0 successful
  */
-void cjwt_destroy( cjwt_t *jwt );
+int cjwt_destroy( cjwt_t **jwt );
+
+
+/**
+ *  The function to convert an algorith text string to an enum
+ *
+ *  @param alg_str  string specification of algorithm
+ *
+ *  @retval  enum of algorithm, -1 if invalid
+ */
+int cjwt_alg_str_to_enum( const char *alg_str );
 
 #endif
