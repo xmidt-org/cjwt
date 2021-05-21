@@ -3,11 +3,11 @@
 ---
 path_classifiers:
     library:
-        - "**/_install"
-        - "**/_prefix"
     test:
         - tests
     exclude:
+        - "**/_install"
+        - "**/_prefix"
         - tests/input
         - tests/new_input
 
