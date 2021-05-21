@@ -6,8 +6,8 @@ path_classifiers:
     test:
         - tests
     exclude:
-        - "**/_install"
-        - "**/_prefix"
+        - "**/_install/**"
+        - "**/_prefix/**"
         - tests/input
         - tests/new_input
 
