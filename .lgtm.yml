@@ -3,10 +3,29 @@
 ---
 path_classifiers:
     library:
-        - build/_install
-        - build/_prefix
+        - **/_install
+        - **/_prefix
     test:
         - tests
     exclude:
         - tests/input
         - tests/new_input
+
+extraction:
+    cpp:
+        prepare:
+            packages:
+                - cmake
+                - libcjson
+                - libtrower-base64
+                - libopenssl
+        configure:
+            command:
+                - mkdir build
+                - cd build
+                - cmake ..
+        index:
+            build_command:
+                - cd build
+                - make
+
