@@ -212,7 +212,7 @@ cjwt_code_t verify_rsa( const EVP_MD *sha, const struct sig_input *in, int paddi
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-cjwt_code_t jws_verify_signature( const cjwt_t *jwt, struct sig_input *in )
+cjwt_code_t jws_verify_signature( const cjwt_t *jwt, const struct sig_input *in )
 {
     switch( jwt->header.alg ) {
         case alg_es256:

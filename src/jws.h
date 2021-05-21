@@ -20,6 +20,6 @@ struct sig_input {
     struct sig_section key;
 };
 
-cjwt_code_t jws_verify_signature( const cjwt_t *jwt, struct sig_input *in );
+cjwt_code_t jws_verify_signature( const cjwt_t *jwt, const struct sig_input *in );
 
 #endif
