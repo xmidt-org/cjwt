@@ -310,11 +310,12 @@ static cjwt_code_t verify_signature( const cjwt_t *jwt,
 {
     cjwt_code_t rv = CJWTE_OK;
     struct sig_input in;
+    uint8_t *sig;
+    size_t sig_len;
 
-    in.sig.len = 0;
-    in.sig.data = b64url_decode_with_alloc( (const uint8_t*) enc_sig,
-                                            enc_sig_len, &in.sig.len );
-    if( !in.sig.data ) {
+    sig = b64url_decode_with_alloc( (const uint8_t*) enc_sig,
+                                    enc_sig_len, &sig_len );
+    if( !sig ) {
         return CJWTE_SIGNATURE_INVALID_BASE64;
     }
 
@@ -322,10 +323,13 @@ static cjwt_code_t verify_signature( const cjwt_t *jwt,
     in.full.len  = full_len;
     in.key.data  = key;
     in.key.len   = key_len;
+    in.sig.len = sig_len;
+    in.sig.data = sig;
+
 
     rv = jws_verify_signature( jwt, &in );
 
-    free( (void*) in.sig.data );
+    free( sig );
     return rv;
 }
 
