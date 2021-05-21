@@ -3,8 +3,8 @@
 ---
 path_classifiers:
     library:
-        - **/_install
-        - **/_prefix
+        - "**/_install"
+        - "**/_prefix"
     test:
         - tests
     exclude:
