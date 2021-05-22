@@ -48,8 +48,8 @@ It is unclear what is exactly in 1.0.0 through 1.0.2.
 - First stable release
 
 [Unreleased]: https://github.com/xmidt-org/cjwt/compare/v2.0.0...HEAD
-[v2.0.0]: https://github.com/xmidt-org/cjwt/compare/1.0.4...v2.0.0
-[v1.0.4]: https://github.com/xmidt-org/cjwt/compare/1.0.3...v1.0.4
+[v2.0.0]: https://github.com/xmidt-org/cjwt/compare/v1.0.4...v2.0.0
+[v1.0.4]: https://github.com/xmidt-org/cjwt/compare/v1.0.3...v1.0.4
 [v1.0.3]: https://github.com/xmidt-org/cjwt/compare/1.0.2...v1.0.3
 [1.0.2]: https://github.com/xmidt-org/cjwt/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/xmidt-org/cjwt/compare/5d07465b61c7787e1ae8491c320a93cf3a1f531c...1.0.1
