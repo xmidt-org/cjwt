@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
-project(cjwt VERSION 1.0.4)
+project(cjwt VERSION 2.0.0)
 
 include(BitwiseVersion)
 include(CTest)
@@ -15,8 +15,8 @@ include(LicenseLinterTarget)
 include(Coverage)
 
 add_definitions(-std=c99)
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Werror -Wall -D_XOPEN_SOURCE=600")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -D_XOPEN_SOURCE=600")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Werror -Wall -Wpedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wpedantic")
 
 add_library(cjwt SHARED "")
 

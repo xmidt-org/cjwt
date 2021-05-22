@@ -603,7 +603,7 @@ void test_case( const test_case_t *t )
     }
 
     if( t->expected != result ) {
-        printf( "\n\e[01;31m--- FAILED: %s (exp: %d != got: %d)\e[00m\n", t->desc, t->expected, result );
+        printf( "\n\x1B[01;31m--- FAILED: %s (exp: %d != got: %d)\x1B[00m\n", t->desc, t->expected, result );
     }
 
     cjwt_destroy( jwt );
@@ -660,7 +660,7 @@ void json_test_case( const json_test_case_t *t )
     result = cjwt_decode( buf, rv, t->options, NULL, 0, t->time, t->skew, &jwt );
 
     if( result != t->expected ) {
-        printf( "\n\e[01;31m--- FAILED: %s.%s\nexp: %d, got: %d\e[00m\n",
+        printf( "\n\x1B[01;31m--- FAILED: %s.%s\nexp: %d, got: %d\x1B[00m\n",
                 t->header, t->payload, t->expected, result );
     }
     CU_ASSERT_FATAL( result == t->expected );

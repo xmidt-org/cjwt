@@ -206,7 +206,7 @@ void test_case (unsigned _i )
         pass_cnt += 1;
         CU_ASSERT ( CJWTE_OK != result );
     } else {
-        printf( "\e[01;31m--- FAILED: %s (%d != %d)\e[00m\n", decode_test_name, expected, result );
+        printf( "\x1B[01;31m--- FAILED: %s (%d != %d)\x1B[00m\n", decode_test_name, expected, result );
         fail_cnt += 1;
         CU_ASSERT ( 0 == 1 );
     }

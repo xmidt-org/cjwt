@@ -19,5 +19,7 @@ struct split_jwt {
 
 int split( const char *full, size_t len, struct split_jwt *split );
 
+char* cjwt_strdup( const char *s );
+
 #endif
 

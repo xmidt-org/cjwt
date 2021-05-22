@@ -27,9 +27,8 @@ target_link_libraries (test_cjwt ${CUNIT_LIBRARIES}
                                  ${CJSON_LIBRARIES}
                                  ${TROWER_LIBRARIES}
                                  ${OPENSSL_LIBRARIES}
-                                 -lm
-                                 gcov
-                                 rt)
+                                 gcov)
+
 add_test(NAME test_cjwt_new COMMAND ${MEMORY_CHECK} ./test_cjwt_new)
 add_executable(test_cjwt_new test_cjwt_new.c
                          ../src/cjwt.c
@@ -40,6 +39,4 @@ target_link_libraries (test_cjwt_new ${CUNIT_LIBRARIES}
                                      ${CJSON_LIBRARIES}
                                      ${TROWER_LIBRARIES}
                                      ${OPENSSL_LIBRARIES}
-                                     -lm
-                                     gcov
-                                     rt)
+                                     gcov)

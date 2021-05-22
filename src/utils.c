@@ -61,6 +61,25 @@ int split( const char *full, size_t len, struct split_jwt *split )
     return 0;
 }
 
+
+char* cjwt_strdup(const char *s)
+{
+    char *rv = NULL;
+
+    if (s) {
+        size_t len;
+
+        len = strlen(s) + 1;
+        rv = (char*) malloc( len );
+        if (rv) {
+            memcpy(rv, s, len);
+        }
+    }
+
+    return rv;
+}
+
+
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/

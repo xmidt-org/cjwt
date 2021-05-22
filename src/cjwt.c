@@ -35,7 +35,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-extern char *strdup(const char *s);
+/* none */
 
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
@@ -100,7 +100,7 @@ static cjwt_code_t process_string( const cJSON *json, const char *name, char **d
             return CJWTE_PAYLOAD_EXPECTED_STRING;
         }
 
-        *dest = strdup( val->valuestring );
+        *dest = cjwt_strdup( val->valuestring );
         if( !(*dest) ) {
             return CJWTE_OUT_OF_MEMORY;
         }
@@ -155,7 +155,7 @@ static cjwt_code_t process_aud( const cJSON *json, cjwt_t *cjwt )
                 return CJWTE_PAYLOAD_EXPECTED_STRING;
             }
 
-            cjwt->aud.names[i] = strdup( tmp->valuestring );
+            cjwt->aud.names[i] = cjwt_strdup( tmp->valuestring );
             if( !cjwt->aud.names[i] ) {
                 return CJWTE_OUT_OF_MEMORY;
             }
@@ -168,7 +168,7 @@ static cjwt_code_t process_aud( const cJSON *json, cjwt_t *cjwt )
             return CJWTE_OUT_OF_MEMORY;
         }
 
-        cjwt->aud.names[0] = strdup( aud->valuestring );
+        cjwt->aud.names[0] = cjwt_strdup( aud->valuestring );
         if( !cjwt->aud.names[0] ) {
             return CJWTE_OUT_OF_MEMORY;
         }
