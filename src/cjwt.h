@@ -4,6 +4,7 @@
 #define __CJWT_H__
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include <cjson/cJSON.h>
 
@@ -191,5 +192,15 @@ cjwt_code_t cjwt_decode( const char *text, size_t text_len, uint32_t options,
  *  @param jwt  [IN] the to be freed cjwt
  */
 void cjwt_destroy( cjwt_t *jwt );
+
+
+/**
+ *  This is a helper function that will walk the jwt and print out the contents
+ *  to the specified stream.
+ *
+ *  @param stream the output stream to use (stdout or stderr)
+ *  @param jwt    the JWT to output
+ */
+void cjwt_print( FILE *stream, cjwt_t *jwt );
 
 #endif

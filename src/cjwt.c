@@ -20,12 +20,29 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-/* none */
+struct alg_map {
+    cjwt_alg_t alg;
+    const char *text;
+};
 
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-/* none */
+const struct alg_map the_alg_map[] = {
+    { .alg = alg_none,  .text = "none"  },
+    { .alg = alg_es256, .text = "ES256" },
+    { .alg = alg_es384, .text = "ES384" },
+    { .alg = alg_es512, .text = "ES512" },
+    { .alg = alg_hs256, .text = "HS256" },
+    { .alg = alg_hs384, .text = "HS384" },
+    { .alg = alg_hs512, .text = "HS512" },
+    { .alg = alg_ps256, .text = "PS256" },
+    { .alg = alg_ps384, .text = "PS384" },
+    { .alg = alg_ps512, .text = "PS512" },
+    { .alg = alg_rs256, .text = "RS256" },
+    { .alg = alg_rs384, .text = "RS384" },
+    { .alg = alg_rs512, .text = "RS512" }
+};
 
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
@@ -42,31 +59,11 @@
 /*----------------------------------------------------------------------------*/
 /* none */
 
-int alg_to_enum( const char *alg_str, cjwt_alg_t *alg )
+static int alg_to_enum( const char *alg_str, cjwt_alg_t *alg )
 {
-    struct alg_map {
-        cjwt_alg_t alg;
-        const char *text;
-    };
-    const struct alg_map m[] = {
-        { .alg = alg_none,  .text = "none"  },
-        { .alg = alg_es256, .text = "ES256" },
-        { .alg = alg_es384, .text = "ES384" },
-        { .alg = alg_es512, .text = "ES512" },
-        { .alg = alg_hs256, .text = "HS256" },
-        { .alg = alg_hs384, .text = "HS384" },
-        { .alg = alg_hs512, .text = "HS512" },
-        { .alg = alg_ps256, .text = "PS256" },
-        { .alg = alg_ps384, .text = "PS384" },
-        { .alg = alg_ps512, .text = "PS512" },
-        { .alg = alg_rs256, .text = "RS256" },
-        { .alg = alg_rs384, .text = "RS384" },
-        { .alg = alg_rs512, .text = "RS512" }
-    };
-
-    for( size_t i = 0; i < sizeof(m) / sizeof(struct alg_map); i++ ) {
-        if( !strcmp( alg_str, m[i].text ) ) {
-            *alg = m[i].alg;
+    for( size_t i = 0; i < sizeof(the_alg_map) / sizeof(struct alg_map); i++ ) {
+        if( !strcmp( alg_str, the_alg_map[i].text ) ) {
+            *alg = the_alg_map[i].alg;
             return 0;
         }
     }
@@ -74,6 +71,16 @@ int alg_to_enum( const char *alg_str, cjwt_alg_t *alg )
     return -1;
 }
 
+const char* alg_to_string( cjwt_alg_t alg )
+{
+    for( size_t i = 0; i < sizeof(the_alg_map) / sizeof(struct alg_map); i++ ) {
+        if( alg == the_alg_map[i].alg ) {
+            return the_alg_map[i].text;
+        }
+    }
+
+    return "unknown";
+}
 
 static void delete_public_claims( cJSON* json )
 {

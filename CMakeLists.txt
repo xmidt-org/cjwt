@@ -35,6 +35,7 @@ include_directories(${OPENSSL_INCLUDE_DIRS})
 ################################################################################
 
 add_subdirectory(src)
+add_subdirectory(examples)
 
 if (BUILD_TESTING)
     include(FindCunit)

@@ -19,23 +19,21 @@ the ability to securely and easily get claims and data from a JWT.  This particu
 JWT implementation uses [cJSON](https://github.com/DaveGamble/cJSON) and is designed to support multiple different
 crypto libraries in the future.
 
-**If you haven't adopted `cjwt` yet, it's recommended to wait a bit to use the new 1.1.x API.**
-
-### API
+## API
 
 The API is meant to be fairly small & leverage what cJSON already provides nicely.
 
 [Here are the details](https://github.com/xmidt-org/cjwt/blob/main/src/cjwt.h)
 
-Basically there is a `cjwt_decode()` function that decodes successfully or fails
-with a broad error code (in the 1.0.x releases) or with a more detailed reason
-in the newer 1.1.x releases.
+There are 3 function:
 
-The other function is a `cjwt_destroy()` function.
+ - `cjwt_decode()` that decodes successfully or fails with a more detailed reason
+ - `cjwt_destroy()` that destroys the `cjwt_t` object cleanly
+ - `cjwt_print()` that prints the `cjwt_t` object to a stream (generally for debugging)
 
-Otherwise you get a simple to work with C struct.
+Otherwise you get a simple C struct to work with in your code.
 
-### Dependencies
+## Dependencies
 
 - [cJSON](https://github.com/DaveGamble/cJSON)
 - [openssl](https://github.com/openssl/openssl)
@@ -48,6 +46,88 @@ To help adopters not make costly security mistakes, cjwt tries to default to
 secure wherever possible.  If you **must** use an insecure feature there are
 option flags that let you do so, but use them sparingly and with care.
 
+
+# Examples:
+
+- HS256
+- RS256
+- ES256
+
+## Inline
+
+Using the decoder:
+
+```c
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+
+#include <cjwt/cjwt.h>
+
+int main( int argc, char *argv[] )
+{
+    cjwt_t *jwt = NULL;
+    cjwt_code_t rv;
+
+    const char *hs_text = 
+        /* header */
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+        /* payload */
+        "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaGVsbG8i"
+        "OiJ3b3JsZCIsImJvYiI6WyJkb2ciLDEyM10sImNhdCI6eyJtb3VzZSI6eyJj"
+        "aGVlc2UiOiJsb3RzIn19LCJpYXQiOjE1MTYyMzkwMjJ9."
+        /* signature */
+        "mJYSucD6RRg6zdPcSKvb5-LKFDJzRvdKqTlqAvDBknU";
+
+    const char *hs_key = "hs256-secret";
+
+    rv = cjwt_decode( hs_text, strlen(hs_text), 0, (uint8_t*) hs_key, strlen(hs_key), 0, 0, &jwt );
+    if( CJWTE_OK != rv ) {
+        printf( "There was an error processing the text: %d\n", rv );
+        return -1;
+    }
+
+    cjwt_print( stdout, jwt );
+
+    cjwt_destroy( jwt );
+
+    return 0;
+}
+```
+
+Gives you this output:
+
+```txt
+=====================
+header
+---------------------
+   alg: HS256
+
+payload
+---------------------
+   iat: 1516239022
+
+   exp: NULL
+   nbf: NULL
+
+   iss: NULL
+   sub: 1234567890
+   jti: NULL
+   aud: NULL
+
+private claims
+---------------------
+{
+     "name":     "John Doe",
+     "hello":    "world",
+     "bob":      ["dog", 123],
+     "cat": {
+         "mouse": {
+             "cheese":   "lots"
+         }
+     }
+}
+```
 
 # Building and Testing Instructions
 
