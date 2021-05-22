@@ -49,9 +49,9 @@ option flags that let you do so, but use them sparingly and with care.
 
 # Examples:
 
-- HS256
-- RS256
-- ES256
+- [HS](https://github.com/xmidt-org/cjwt/blob/main/examples/basic/hs_example.c)
+- [RS / PS](https://github.com/xmidt-org/cjwt/blob/main/examples/basic/rs_example.c)
+- [ES](https://github.com/xmidt-org/cjwt/blob/main/examples/basic/es_example.c)
 
 ## Inline
 

@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v2.0.0]
+- Update the interface to not use strlen() for lengths but expect them to be
+  passed in.  This reduces the likelihood of this library being exploited by
+  a long string.
+- Add the cjwt_printf() function to the interface.
+- Remove the alg mapping function that was mistakenly provided in the 1.x.x API.
+- Add a few worked examples.
+
 ## [v1.0.4]
 - Move to use internal base64 decoding with stricter processing rules
 - Major refactor to use a specified length and not '\0' terminated strings internally.
