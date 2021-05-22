@@ -40,3 +40,16 @@ target_link_libraries (test_cjwt_new ${CUNIT_LIBRARIES}
                                      ${TROWER_LIBRARIES}
                                      ${OPENSSL_LIBRARIES}
                                      gcov)
+
+add_test(NAME test_print COMMAND ${MEMORY_CHECK} ./test_print)
+add_executable(test_print test_print.c
+                         ../src/cjwt.c
+                         ../src/jws_evp_openssl.c
+                         ../src/print.c
+                         ../src/utils.c)
+
+target_link_libraries (test_print ${CUNIT_LIBRARIES}
+                                  ${CJSON_LIBRARIES}
+                                  ${TROWER_LIBRARIES}
+                                  ${OPENSSL_LIBRARIES}
+                                  gcov)

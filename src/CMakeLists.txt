@@ -5,6 +5,7 @@ target_sources(cjwt
     PRIVATE
         cjwt.c
         jws_evp_openssl.c
+        print.c
         utils.c
 )
 
