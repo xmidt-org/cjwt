@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include "cjwt.h"
-#include "internal.h"
 
 struct sig_section {
     const uint8_t *data;
@@ -21,6 +20,6 @@ struct sig_input {
     struct sig_section key;
 };
 
-cjwt_code_t jws_verify_signature( const __cjwt_t *jwt, const struct sig_input *in );
+cjwt_code_t jws_verify_signature( const cjwt_t *jwt, const struct sig_input *in );
 
 #endif

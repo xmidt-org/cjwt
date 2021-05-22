@@ -151,7 +151,7 @@ void test_case (unsigned _i )
     int expected;
     int key_len;
     ssize_t jwt_bytes;
-    int result = 0;
+    cjwt_code_t result = 0;
     cjwt_t *jwt = NULL;
     char jwt_buf[65535];
     char pem_buf[8192];
@@ -189,21 +189,29 @@ void test_case (unsigned _i )
     jwt_bytes = read_file( jwt_fname, jwt_buf, sizeof( jwt_buf ) );
 
     if( jwt_bytes > 0 ) {
-        result = cjwt_decode( jwt_buf, OPT_ALLOW_ALG_NONE, &jwt, ( const uint8_t * )key_str, key_len );
+        result = cjwt_decode( jwt_buf, strlen(jwt_buf),
+                              OPT_ALLOW_ALG_NONE|OPT_ALLOW_ANY_TIME,
+                              (const uint8_t *)key_str, key_len,
+                              0, 0, &jwt );
     } else {
         result = jwt_bytes;
     }
 
-    if( expected == result ) {
+    if( (0 == expected) && (CJWTE_OK == result) ) {
         printf( "--- PASSED: %s\n", decode_test_name );
         pass_cnt += 1;
+        CU_ASSERT ( CJWTE_OK == result );
+    } else if( (0 != expected) && (CJWTE_OK != result) ) {
+        printf( "--- PASSED: %s\n", decode_test_name );
+        pass_cnt += 1;
+        CU_ASSERT ( CJWTE_OK != result );
     } else {
         printf( "\e[01;31m--- FAILED: %s (%d != %d)\e[00m\n", decode_test_name, expected, result );
         fail_cnt += 1;
+        CU_ASSERT ( 0 == 1 );
     }
 
-    cjwt_destroy( &jwt );
-    CU_ASSERT ( expected == result );
+    cjwt_destroy( jwt );
 }
 
 
