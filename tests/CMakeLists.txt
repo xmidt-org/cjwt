@@ -9,8 +9,6 @@ if(NOT DISABLE_VALGRIND)
 set (MEMORY_CHECK valgrind --leak-check=full --show-reachable=yes --error-exitcode=1 -v)
 endif ()
 
-find_package (Threads)
-
 link_directories ( ${LIBRARY_DIR} )
 
 add_test(NAME test_utils COMMAND ${MEMORY_CHECK} ./test_utils)
@@ -23,7 +21,6 @@ add_test(NAME test_cjwt COMMAND ${MEMORY_CHECK} ./test_cjwt)
 add_executable(test_cjwt test_cjwt.c
                          ../src/cjwt.c
                          ../src/jws_evp_openssl.c
-                         ../src/adapter.c
                          ../src/utils.c)
 
 target_link_libraries (test_cjwt ${CUNIT_LIBRARIES}

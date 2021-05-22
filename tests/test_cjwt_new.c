@@ -15,7 +15,6 @@
 #include <trower-base64/base64.h>
 
 #include "../src/cjwt.h"
-#include "../src/internal.h"
 
 typedef struct {
     const char *desc;
@@ -32,7 +31,7 @@ typedef struct {
     int options;
     int64_t time;
     int64_t skew;
-    __cjwt_t jwt;
+    cjwt_t jwt;
 } json_test_case_t;
 
 test_case_t test_list[] = {
@@ -577,7 +576,7 @@ void test_case( const test_case_t *t )
     int key_len = 0;
     ssize_t jwt_bytes;
     cjwt_code_t result = CJWTE_OK;
-    __cjwt_t *jwt = NULL;
+    cjwt_t *jwt = NULL;
     char jwt_buf[65535];
     char pem_buf[8192];
     const uint8_t *key = (const uint8_t*) t->key;
@@ -598,7 +597,7 @@ void test_case( const test_case_t *t )
         while( isspace(jwt_buf[jwt_bytes - 1]) ) {
             jwt_bytes--;
         }
-        result = __cjwt_decode( jwt_buf, jwt_bytes, 0, key, key_len, 0, 0, &jwt );
+        result = cjwt_decode( jwt_buf, jwt_bytes, 0, key, key_len, 0, 0, &jwt );
     } else {
         result = jwt_bytes;
     }
@@ -607,7 +606,7 @@ void test_case( const test_case_t *t )
         printf( "\n\e[01;31m--- FAILED: %s (exp: %d != got: %d)\e[00m\n", t->desc, t->expected, result );
     }
 
-    __cjwt_destroy( jwt );
+    cjwt_destroy( jwt );
     CU_ASSERT ( t->expected == result );
 }
 
@@ -649,7 +648,7 @@ void json_test_case( const json_test_case_t *t )
     char *b64_p = b64url_encode_with_alloc( (uint8_t*) t->payload, strlen(t->payload), NULL );
     char buf[4096];
     int rv;
-    __cjwt_t *jwt = NULL;
+    cjwt_t *jwt = NULL;
     cjwt_code_t result;
 
     CU_ASSERT_FATAL( NULL != b64_h );
@@ -658,7 +657,7 @@ void json_test_case( const json_test_case_t *t )
     rv = snprintf( buf, sizeof(buf), "%s.%s.", b64_h, b64_p );
     CU_ASSERT_FATAL( (0 < rv) && (rv < (int) sizeof(buf)) );
 
-    result = __cjwt_decode( buf, rv, t->options, NULL, 0, t->time, t->skew, &jwt );
+    result = cjwt_decode( buf, rv, t->options, NULL, 0, t->time, t->skew, &jwt );
 
     if( result != t->expected ) {
         printf( "\n\e[01;31m--- FAILED: %s.%s\nexp: %d, got: %d\e[00m\n",
@@ -687,7 +686,7 @@ void json_test_case( const json_test_case_t *t )
     }
 
     if( jwt ) {
-        __cjwt_destroy( jwt );
+        cjwt_destroy( jwt );
     }
     if( b64_h ) {
         free( b64_h );
@@ -709,7 +708,7 @@ void test_cjwt (void)
     char *bad_p2 = "eyAiYWxnIjogIm5vbmUiIH0..";
     char *bad_3group = "eyAiYWxnIjogIlJTMjU2IiB9.eyAiYm9iIjogMTIzIH0.";
     char *bad_5group = "eyAiYWxnIjogIlJTMjU2IiB9.eyAiYm9iIjogMTIzIH0...";
-    __cjwt_t *jwt;
+    cjwt_t *jwt;
     cjwt_code_t result;
 
     for( size_t i = 0; i < sizeof(test_list)/sizeof(test_case_t); i++ ) {
@@ -720,31 +719,31 @@ void test_cjwt (void)
     }
 
     //printf( "%s.%s.", b64_h, b64_p );
-    result = __cjwt_decode( bad_h1, strlen(bad_h1), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
+    result = cjwt_decode( bad_h1, strlen(bad_h1), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
     CU_ASSERT( CJWTE_HEADER_INVALID_BASE64 == result );
 
-    result = __cjwt_decode( bad_p1, strlen(bad_p1), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
+    result = cjwt_decode( bad_p1, strlen(bad_p1), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
     CU_ASSERT( CJWTE_PAYLOAD_INVALID_BASE64 == result );
 
-    result = __cjwt_decode( bad_h2, strlen(bad_h2), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
+    result = cjwt_decode( bad_h2, strlen(bad_h2), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
     CU_ASSERT( CJWTE_HEADER_MISSING == result );
 
-    result = __cjwt_decode( bad_p2, strlen(bad_p2), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
+    result = cjwt_decode( bad_p2, strlen(bad_p2), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
     CU_ASSERT( CJWTE_PAYLOAD_MISSING == result );
 
-    result = __cjwt_decode( NULL, strlen(bad_p2), 0, NULL, 0, 0, 0, &jwt );
+    result = cjwt_decode( NULL, strlen(bad_p2), 0, NULL, 0, 0, 0, &jwt );
     CU_ASSERT( CJWTE_INVALID_PARAMETERS == result );
 
-    result = __cjwt_decode( bad_p2, 0, 0, NULL, 0, 0, 0, &jwt );
+    result = cjwt_decode( bad_p2, 0, 0, NULL, 0, 0, 0, &jwt );
     CU_ASSERT( CJWTE_INVALID_PARAMETERS == result );
 
-    result = __cjwt_decode( bad_p2, strlen(bad_p2), 0, NULL, 0, 0, 0, NULL );
+    result = cjwt_decode( bad_p2, strlen(bad_p2), 0, NULL, 0, 0, 0, NULL );
     CU_ASSERT( CJWTE_INVALID_PARAMETERS == result );
 
-    result = __cjwt_decode( bad_3group, strlen(bad_3group), 0, NULL, 0, 0, 0, &jwt );
+    result = cjwt_decode( bad_3group, strlen(bad_3group), 0, NULL, 0, 0, 0, &jwt );
     CU_ASSERT( CJWTE_SIGNATURE_MISSING == result );
 
-    result = __cjwt_decode( bad_5group, strlen(bad_5group), 0, NULL, 0, 0, 0, &jwt );
+    result = cjwt_decode( bad_5group, strlen(bad_5group), 0, NULL, 0, 0, 0, &jwt );
     CU_ASSERT( CJWTE_INVALID_SECTIONS == result );
 }
 
