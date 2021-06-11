@@ -29,8 +29,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt update
-          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev gcovr libcjson-dev libcurl4-openssl-dev 
-          pip install codecov
+          sudo apt-get -y install libcjson-dev libcurl4-openssl-dev 
 
       - name: Make Build Directory
         run: mkdir build
@@ -45,7 +44,17 @@ jobs:
       - name: CMake
         working-directory: build
         run: |
-          cmake .. -DDISABLE_VALGRIND:BOOL=false
+          cmake .. -DBUILD_TESTING=0
+
+      - name: Prebuild
+        working-directory: build
+        run: |
+          make
+
+      - name: Clean
+        working-directory: build
+        run: |
+          make clean
 
       - name: Coverity Analysis
         working-directory: build
