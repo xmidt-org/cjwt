@@ -1,10 +1,9 @@
 # SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-name: CI
+name: Coverity Check
 
 on:
-  pull_request:
   push:
     paths-ignore:
       - 'AUTHORS'
@@ -19,10 +18,9 @@ on:
 
 jobs:
   test:
-    name: Unit Tests
-    runs-on: [ ubuntu-latest ]
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    runs-on: ubuntu-latest
+    steps: 
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -37,40 +35,36 @@ jobs:
       - name: Make Build Directory
         run: mkdir build
 
-      - name: Get Sonarcloud Binaries
+      - name: Coverity Download
         working-directory: build
+        env:
+          COVERITY_SECRET: ${{ secrets.COVERITY_KEY }}
         run: |
-          ../.github/scripts/get_sonarcloud.sh
+          ../.github/scripts/get_coverity.sh $COVERITY_SECRET $GITHUB_REPOSITORY
 
       - name: CMake
         working-directory: build
         run: |
           cmake .. -DDISABLE_VALGRIND:BOOL=false
 
-      - name: Build
+      - name: Coverity Analysis
         working-directory: build
         run: |
-          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all
+          ./coverity/bin/cov-build --dir cov-int make
 
-      - name: Test
+      - name: Archive Results
         working-directory: build
         run: |
-          # ARGS=-VV make test       # use this version for debugging
-          make test
+          tar czvf coverity.tgz cov-int
 
-      - name: Merge GCOV Reports for Sonarcloud
+      - name: Upload Results
         working-directory: build
-        run: |
-          gcovr --sonarqube coverage.xml -r ..
-
-      - name: Upload SonarCloud
-        run: |
-          build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dproject.settings=.sonar-project.properties -Dsonar.login=${{ secrets.SONAR_TOKEN }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Codecov.io
-        uses: codecov/codecov-action@v1
-        with:
-          directory: .
-          fail_ci_if_error: true
+          COVERITY_SECRET: ${{ secrets.COVERITY_KEY }}
+        run: |
+          curl --form token=$COVERITY_SECRET \
+               --form email=weston_schmidt@alumni.purdue.edu \
+               --form file=@coverity.tgz \
+               --form version="$GITHUB_SHA" \
+               --form description="`date`" \
+               "https://scan.coverity.com/builds?project=${GITHUB_REPOSITORY//\//\%2F}"
