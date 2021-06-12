@@ -13,6 +13,7 @@ A C JWT Implementation
 [![Language Grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/xmidt-org/cjwt.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/xmidt-org/cjwt/context:cpp)
 [![Apache V2 License](http://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/xmidt-org/cjwt/blob/main/LICENSES/Apache-2.0.txt)
 [![GitHub release](https://img.shields.io/github/release/xmidt-org/cjwt.svg)](CHANGELOG.md)
+[![JWT.io](http://jwt.io/img/badge.svg)](https://jwt.io/)
 
 `cjwt` is a small JWT handler designed to allow consumers of JWTs of the JWS variant
 the ability to securely and easily get claims and data from a JWT.  This particular
