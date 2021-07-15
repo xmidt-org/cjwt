@@ -6,7 +6,7 @@
 #include <string.h>
 #include <CUnit/Basic.h>
 
-#include "../src/cjwt.h"
+#include "cjwt.h"
 
 void test_print( void )
 {

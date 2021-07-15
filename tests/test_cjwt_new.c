@@ -14,7 +14,7 @@
 #include <cjson/cJSON.h>
 #include <trower-base64/base64.h>
 
-#include "../src/cjwt.h"
+#include "cjwt.h"
 
 typedef struct {
     const char *desc;
@@ -529,7 +529,7 @@ int open_input_file( const char *fname )
     char cwd[1024];
 
     if( getcwd( cwd, sizeof( cwd ) ) != NULL ) {
-        strcat( cwd, "/../../tests/new_inputs/" );
+        strcat( cwd, "/../tests/new_inputs/" );
     } else {
         perror( "getcwd() error" );
 		return -1;

@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "../../src/cjwt.h"
+#include "cjwt.h"
 
 /*
  * The output of the program should be as following (the private claims

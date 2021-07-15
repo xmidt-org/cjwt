@@ -2,7 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 build
+builddir
 tags
+
+# ignore subproject objects (keep the .wrap)
+subprojects/cJSON-*
+subprojects/trower-base64-*
+subprojects/packagecache
 
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
@@ -22,6 +28,8 @@ _test
 _cgo_defun.c
 _cgo_gotypes.go
 _cgo_export.*
+*.zip
+*.tar.gz
 
 _testmain.go
 

@@ -24,11 +24,7 @@ jobs:
         shell: bash
       - name: Create tarball and sha256
         run: |
-          git archive --format=tar.gz -o ${release_slug}.tar.gz --prefix=${release_slug}/ ${version}
-          git archive --format=zip -o ${release_slug}.zip --prefix=${release_slug}/ ${version}
-          sha256sum ${release_slug}.tar.gz ${release_slug}.zip > ${release_slug}-sha256sums.txt
-          mkdir artifacts
-          cp ${release_slug}* artifacts/.
+          .github/scripts/make_release_artifacts.sh -v ${version} -r '${{ github.repository }}' -m -p trower_base64
       - name: Prepare Release Body
         id: prep
         run: |
