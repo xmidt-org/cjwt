@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v2.0.1]
+- Upgrade the build system to use meson.
+- Improve the CI pipeline.
+
 ## [v2.0.0]
 - Update the interface to not use strlen() for lengths but expect them to be
   passed in.  This reduces the likelihood of this library being exploited by
