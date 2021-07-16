@@ -12,7 +12,7 @@
 #include <CUnit/Basic.h>
 
 #include <cjson/cJSON.h>
-#include "../src/cjwt.h"
+#include "cjwt.h"
 
 typedef struct {
     int expected;
@@ -98,7 +98,7 @@ int open_input_file( const char *fname )
     char cwd[1024];
 
     if( getcwd( cwd, sizeof( cwd ) ) != NULL ) {
-        strcat( cwd, "/../../tests/inputs/" );
+        strcat( cwd, "/../tests/inputs/" );
     } else {
         perror( "getcwd() error" );
 		return -1;
