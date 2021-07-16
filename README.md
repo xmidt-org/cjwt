@@ -17,8 +17,8 @@ A C JWT Implementation
 
 `cjwt` is a small JWT handler designed to allow consumers of JWTs of the JWS variant
 the ability to securely and easily get claims and data from a JWT.  This particular
-JWT implementation uses [cJSON](https://github.com/DaveGamble/cJSON) and is designed to support multiple different
-crypto libraries in the future.
+JWT implementation uses [cJSON](https://github.com/DaveGamble/cJSON) and is designed
+to support multiple different crypto libraries in the future.
 
 ## API
 
@@ -133,9 +133,9 @@ private claims
 # Building and Testing Instructions
 
 ```
-mkdir build
+meson build
+meson compile -C build
 cd build
-cmake ..
-make all test coverage
-firefox index.html
+ninja test coverage
+firefox ./meson-logs/coveragereport/index.html
 ```
