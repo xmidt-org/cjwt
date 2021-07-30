@@ -38,7 +38,7 @@ libtrower_base64_dep = dependency('trower-base64', version: '>=1.2.7')
 # Define the libraries
 ################################################################################
 
-inc = include_directories(['src', inc_base])
+inc = include_directories([inc_base])
 
 install_headers([inc_base+'/cjwt.h', ver_h], subdir: meson.project_name())
 
