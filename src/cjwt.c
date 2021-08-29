@@ -50,14 +50,8 @@ const struct alg_map the_alg_map[] = {
 /* none */
 
 /*----------------------------------------------------------------------------*/
-/*                             External Functions                             */
-/*----------------------------------------------------------------------------*/
-/* none */
-
-/*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-/* none */
 
 static int alg_to_enum( const char *alg_str, cjwt_alg_t *alg )
 {
@@ -360,6 +354,11 @@ static cjwt_code_t verify_time_windows( const cjwt_t *jwt, uint32_t options,
 }
 
 
+/*----------------------------------------------------------------------------*/
+/*                             External Functions                             */
+/*----------------------------------------------------------------------------*/
+
+
 /**
  * validates jwt token and extracts data
  */
@@ -489,4 +488,30 @@ void cjwt_destroy( cjwt_t *jwt )
 
         free( jwt );
     }
+}
+
+
+cjwt_code_t cjwt_alg_string_to_enum(const char *s, size_t len, cjwt_alg_t *alg)
+{
+    char buf[6];
+    int found = 0;
+
+    if(!s || !len || !alg) {
+        return CJWTE_INVALID_PARAMETERS;
+    }
+
+    if( SIZE_MAX == len ) {
+        len = strlen(s);
+    }
+
+    if( (4 != len) && (5 != len) ) {
+        return CJWTE_UNKNOWN_ALG;
+    }
+
+    memcpy(buf, s, len);
+    buf[len] = '\0';
+
+    found = alg_to_enum(buf, alg);
+
+    return (0 == found) ? CJWTE_OK : CJWTE_UNKNOWN_ALG;
 }

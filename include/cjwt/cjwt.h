@@ -80,6 +80,7 @@ typedef enum {
     CJWTE_HEADER_UNSUPPORTED_UNKNOWN,   /* 26 */
     CJWTE_KEY_TOO_LARGE,                /* 27 */
     CJWTE_SIGNATURE_KEY_TOO_LARGE,      /* 28 */
+    CJWTE_UNKNOWN_ALG,                  /* 29 */
 
     CJWTE_LAST  /* never use! */
 } cjwt_code_t;
@@ -105,7 +106,7 @@ typedef enum {
     alg_rs384,
     alg_rs512,
 
-    num_algorithms  /* never use! */
+    num_algorithms
 } cjwt_alg_t;
 
 typedef struct {
@@ -202,5 +203,21 @@ void cjwt_destroy( cjwt_t *jwt );
  *  @param jwt    the JWT to output
  */
 void cjwt_print( FILE *stream, cjwt_t *jwt );
+
+
+/**
+ *  Provides a simple way to take a string and convert it to the alg.
+ *
+ *  @param s   the string to inspect
+ *  @param len the length of the string (or SIZE_MAX if unknown length)
+ *  @param alg the resulting alg enum val if found
+ *
+ *  @return CJWTE_OK if found, reason for failure otherwise
+ *
+ *  Failure reasons:
+ *      CJWTE_INVALID_PARAMETERS
+ *      CJWTE_UNKNOWN_ALG
+ */
+cjwt_code_t cjwt_alg_string_to_enum(const char *s, size_t len, cjwt_alg_t *alg);
 
 #endif
