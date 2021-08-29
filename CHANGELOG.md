@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v2.1.0]
+- Add string to alg type mapping function.
+- Allow use of `num_algorithms`.
+
 ## [v2.0.1]
 - Upgrade the build system to use meson.
 - Improve the CI pipeline.
@@ -51,7 +55,8 @@ It is unclear what is exactly in 1.0.0 through 1.0.2.
 ### Added
 - First stable release
 
-[Unreleased]: https://github.com/xmidt-org/cjwt/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/xmidt-org/cjwt/compare/v2.1.0...HEAD
+[v2.1.0]: https://github.com/xmidt-org/cjwt/compare/v2.0.1...v2.1.0
 [v2.0.1]: https://github.com/xmidt-org/cjwt/compare/v2.0.0...v2.0.1
 [v2.0.0]: https://github.com/xmidt-org/cjwt/compare/v1.0.4...v2.0.0
 [v1.0.4]: https://github.com/xmidt-org/cjwt/compare/v1.0.3...v1.0.4
