@@ -117,6 +117,17 @@ test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
                   dependencies: common_deps,
                   link_args: test_args))
 
+  test('test map',
+       executable('test_map',
+                  ['tests/test_map.c',
+                   'src/cjwt.c',
+                   'src/jws_evp_openssl.c',
+                   'src/utils.c'],
+                  include_directories: inc,
+                  dependencies: common_deps,
+                  link_args: test_args))
+
+
   add_test_setup('valgrind',
                  is_default: true,
                  exe_wrapper: [ 'valgrind',
