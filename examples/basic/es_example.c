@@ -36,7 +36,7 @@
  * =====================
  */
 
-int main( int argc, char *argv[] )
+int main( void )
 {
     cjwt_t *jwt = NULL;
     cjwt_code_t rv;
