@@ -27,4 +27,3 @@ jobs:
       packages: libcjson-dev libcurl4-openssl-dev
     secrets:
       coverity_key: ${{ secrets.COVERITY_KEY }}
-      token: ${{ secrets.GITHUB_TOKEN }}
