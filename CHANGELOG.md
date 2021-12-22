@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v2.1.1]
+- Fix a few compiler warnings in the example code.
+
 ## [v2.1.0]
 - Add string to alg type mapping function.
 - Allow use of `num_algorithms`.
