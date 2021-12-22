@@ -149,6 +149,16 @@ if reuse_bin.found()
                 output: ['license'])
 endif
 
+################################################################################
+# Add the coverity check target
+################################################################################
+
+alias_target('coverity', libcjwt )
+
+################################################################################
+# External/consumer definitions
+################################################################################
+
 libcjwt_dep = declare_dependency(include_directories: ['include'],
                                           link_with: libcjwt)
 
