@@ -17,3 +17,5 @@ on:
 jobs:
   codeql:
     uses: xmidt-org/.github/.github/workflows/codeql-c-analysis.yml@main
+    with:
+      packages: libcjson-dev libcurl4-openssl-dev
