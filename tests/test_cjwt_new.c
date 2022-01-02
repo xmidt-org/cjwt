@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2017-2022 Comcast Cable Communications Management, LLC
 // SPDX-License-Identifier: Apache-2.0
 
+#include <CUnit/Basic.h>
+#include <cjson/cJSON.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -8,11 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
-#include <CUnit/Basic.h>
-#include <cjson/cJSON.h>
 #include <trower-base64/base64.h>
+#include <unistd.h>
 
 #include "cjwt.h"
 
@@ -782,3 +781,4 @@ int main(void)
 
     return rv;
 }
+
