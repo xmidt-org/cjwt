@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2017-2022 Comcast Cable Communications Management, LLC
 // SPDX-License-Identifier: Apache-2.0
+
+#include <cjson/cJSON.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <cjson/cJSON.h>
 #include <trower-base64/base64.h>
 
 #include "cjwt.h"

@@ -1,9 +1,6 @@
 /* SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include <openssl/bio.h>
 #include <openssl/ec.h>
 #include <openssl/evp.h>
@@ -11,6 +8,8 @@
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "cjwt.h"
 #include "jws.h"
