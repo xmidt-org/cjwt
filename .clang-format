@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2022 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: Apache-2.0
+# Version 1
+# Requires clang-format v13 due to AlignArrayOfStructures
+
+---
+Language: Cpp
+
+BasedOnStyle: WebKit
+AlignConsecutiveAssignments: Consecutive
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: Right
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AlwaysBreakBeforeMultilineStrings: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel:         false
+  AfterClass:             false
+  AfterControlStatement:  MultiLine
+  AfterEnum:              false
+  AfterFunction:          true
+  AfterNamespace:         false
+  AfterObjCDeclaration:   false
+  AfterStruct:            false
+  AfterUnion:             false
+  AfterExternBlock:       false
+  BeforeCatch:            false
+  BeforeElse:             false
+  BeforeLambdaBody:       false
+  BeforeWhile:            false
+  IndentBraces:           false
+  SplitEmptyFunction:     true
+  SplitEmptyRecord:       true
+  SplitEmptyNamespace:    true
+ConstructorInitializerIndentWidth: 4
+DerivePointerAlignment: false
+MaxEmptyLinesToKeep: 2
+IndentCaseLabels: true
+IndentWidth: 4
+TabWidth: 4
+PointerAlignment: Right
+SpaceAfterCStyleCast: true
+SpaceBeforeCpp11BracedList: false

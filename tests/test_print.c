@@ -1,15 +1,16 @@
-/* SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC */
+/* SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
+#include <CUnit/Basic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <CUnit/Basic.h>
 
 #include "cjwt.h"
 
-void test_print( void )
+void test_print(void)
 {
+    // clang-format off
     cjwt_t jwt = {
         .header.alg = alg_rs512,
         .iss = (char*) "Issuer Claim",
@@ -22,52 +23,53 @@ void test_print( void )
         .iat = (int64_t[1]) { 40000 },
         .private_claims = cJSON_CreateObject(),
     };
+    // clang-format on
 
     /* This is generally a debugging tool & validating the output is
      * less of a priority than not crashing. */
 
-    cjwt_print( stdout, NULL );
+    cjwt_print(stdout, NULL);
 
-    cjwt_print( stdout, &jwt );
+    cjwt_print(stdout, &jwt);
 
-    cJSON_Delete( jwt.private_claims );
-    memset( &jwt, 0, sizeof(cjwt_t) );
+    cJSON_Delete(jwt.private_claims);
+    memset(&jwt, 0, sizeof(cjwt_t));
 
-    cjwt_print( stdout, &jwt );
+    cjwt_print(stdout, &jwt);
 }
 
 
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
-    *suite = CU_add_suite( "Print tests", NULL, NULL );
-    CU_add_test( *suite, "cjwt_print() Tests", test_print );
+    *suite = CU_add_suite("Print tests", NULL, NULL);
+    CU_add_test(*suite, "cjwt_print() Tests", test_print);
 }
 
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
     }
 
-    if( 0 != rv ) {
+    if (0 != rv) {
         return 1;
     }
     return 0;

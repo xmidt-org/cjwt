@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2017-2021 Comcast Cable Communications Management, LLC
+// SPDX-FileCopyrightText: 2017-2022 Comcast Cable Communications Management, LLC
 // SPDX-License-Identifier: Apache-2.0
 
 #include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
-#include <fcntl.h>
 
 #include <CUnit/Basic.h>
 #include <cjson/cJSON.h>
@@ -34,6 +34,7 @@ typedef struct {
     cjwt_t jwt;
 } json_test_case_t;
 
+// clang-format off
 test_case_t test_list[] = {
     /* Valid, positive tests */
     /*------------------------------------------------------------------------*/
@@ -523,263 +524,261 @@ json_test_case_t json_test_list[] = {
       .time = 1522334466,
     },
 };
+// clang-format on
 
-int open_input_file( const char *fname )
+int open_input_file(const char *fname)
 {
     char cwd[1024];
 
-    if( getcwd( cwd, sizeof( cwd ) ) != NULL ) {
-        strcat( cwd, "/../tests/new_inputs/" );
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        strcat(cwd, "/../tests/new_inputs/");
     } else {
-        perror( "getcwd() error" );
-		return -1;
+        perror("getcwd() error");
+        return -1;
     }
 
-	if( (fname==NULL) || ((strlen(cwd) + strlen(fname))>sizeof(cwd)))
-	{
-		perror( "filename too long error" );
-		return -1;
-    }	
-	strcat( cwd, fname );	
-    int fd = open( cwd, O_RDONLY );
+    if ((fname == NULL) || ((strlen(cwd) + strlen(fname)) > sizeof(cwd)))
+    {
+        perror("filename too long error");
+        return -1;
+    }
+    strcat(cwd, fname);
+    int fd = open(cwd, O_RDONLY);
 
-    if( fd < 0 ) {
-        printf( "File %s open error\n", fname );
+    if (fd < 0) {
+        printf("File %s open error\n", fname);
     }
 
     return fd;
 }
 
-ssize_t read_file( const char *fname, char *buf, size_t buflen )
+ssize_t read_file(const char *fname, char *buf, size_t buflen)
 {
     ssize_t nbytes = 0;
-    int fd = open_input_file( fname );
+    int fd         = open_input_file(fname);
 
-    if( fd < 0 ) {
+    if (fd < 0) {
         return fd;
     }
 
-    nbytes = read( fd, buf, buflen );
+    nbytes = read(fd, buf, buflen);
 
-    if( nbytes < 0 ) {
-        printf( "Read file %s error\n", fname );
-        close( fd );
+    if (nbytes < 0) {
+        printf("Read file %s error\n", fname);
+        close(fd);
         return nbytes;
     }
 
-    close( fd );
+    close(fd);
     return nbytes;
 }
 
-void test_case( const test_case_t *t )
+void test_case(const test_case_t *t)
 {
     int key_len = 0;
     ssize_t jwt_bytes;
     cjwt_code_t result = CJWTE_OK;
-    cjwt_t *jwt = NULL;
+    cjwt_t *jwt        = NULL;
     char jwt_buf[65535];
     char pem_buf[8192];
-    const uint8_t *key = (const uint8_t*) t->key;
+    const uint8_t *key = (const uint8_t *) t->key;
 
-    if( NULL != t->key ) {
+    if (NULL != t->key) {
         key_len = strlen(t->key);
-    } else if( t->key_fn ) {
-        key_len = read_file( t->key_fn, pem_buf, sizeof( pem_buf ) );
+    } else if (t->key_fn) {
+        key_len = read_file(t->key_fn, pem_buf, sizeof(pem_buf));
 
-        CU_ASSERT_FATAL( key_len >= 0 );
-        key = (uint8_t*) pem_buf;
+        CU_ASSERT_FATAL(key_len >= 0);
+        key = (uint8_t *) pem_buf;
     }
 
-    memset( jwt_buf, 0, sizeof(jwt_buf) );
-    jwt_bytes = read_file( t->filename, jwt_buf, sizeof( jwt_buf ) );
+    memset(jwt_buf, 0, sizeof(jwt_buf));
+    jwt_bytes = read_file(t->filename, jwt_buf, sizeof(jwt_buf));
 
-    if( jwt_bytes > 0 ) {
-        while( isspace(jwt_buf[jwt_bytes - 1]) ) {
+    if (jwt_bytes > 0) {
+        while (isspace(jwt_buf[jwt_bytes - 1])) {
             jwt_bytes--;
         }
-        result = cjwt_decode( jwt_buf, jwt_bytes, 0, key, key_len, 0, 0, &jwt );
+        result = cjwt_decode(jwt_buf, jwt_bytes, 0, key, key_len, 0, 0, &jwt);
     } else {
         result = jwt_bytes;
     }
 
-    if( t->expected != result ) {
-        printf( "\n\x1B[01;31m--- FAILED: %s (exp: %d != got: %d)\x1B[00m\n", t->desc, t->expected, result );
+    if (t->expected != result) {
+        printf("\n\x1B[01;31m--- FAILED: %s (exp: %d != got: %d)\x1B[00m\n", t->desc, t->expected, result);
     }
 
-    cjwt_destroy( jwt );
-    CU_ASSERT ( t->expected == result );
+    cjwt_destroy(jwt);
+    CU_ASSERT(t->expected == result);
 }
 
-void str_eq( const char *exp, const char *act )
+void str_eq(const char *exp, const char *act)
 {
-    if( NULL == exp ) {
-        CU_ASSERT( exp == act );
+    if (NULL == exp) {
+        CU_ASSERT(exp == act);
         return;
     }
 
-    CU_ASSERT_FATAL( NULL != exp );
-    CU_ASSERT_FATAL( NULL != exp );
-    CU_ASSERT_STRING_EQUAL( exp, act );
+    CU_ASSERT_FATAL(NULL != exp);
+    CU_ASSERT_FATAL(NULL != exp);
+    CU_ASSERT_STRING_EQUAL(exp, act);
 }
 
-void int64_eq( int64_t *exp, int64_t *act )
+void int64_eq(int64_t *exp, int64_t *act)
 {
-    if( NULL == exp ) {
-        CU_ASSERT( exp == act );
+    if (NULL == exp) {
+        CU_ASSERT(exp == act);
         return;
     }
 
-    CU_ASSERT_FATAL( NULL != exp );
-    CU_ASSERT_FATAL( NULL != exp );
-    CU_ASSERT_FATAL( *exp == *act );
+    CU_ASSERT_FATAL(NULL != exp);
+    CU_ASSERT_FATAL(NULL != exp);
+    CU_ASSERT_FATAL(*exp == *act);
 }
 
-void claims_eq( cJSON *exp, cJSON *act )
+void claims_eq(cJSON *exp, cJSON *act)
 {
-    if( NULL == exp ) {
-        CU_ASSERT( exp == act );
+    if (NULL == exp) {
+        CU_ASSERT(exp == act);
         return;
     }
 }
 
-void json_test_case( const json_test_case_t *t )
+void json_test_case(const json_test_case_t *t)
 {
-    char *b64_h = b64url_encode_with_alloc( (uint8_t*) t->header, strlen(t->header), NULL );
-    char *b64_p = b64url_encode_with_alloc( (uint8_t*) t->payload, strlen(t->payload), NULL );
+    char *b64_h = b64url_encode_with_alloc((uint8_t *) t->header, strlen(t->header), NULL);
+    char *b64_p = b64url_encode_with_alloc((uint8_t *) t->payload, strlen(t->payload), NULL);
     char buf[4096];
     int rv;
     cjwt_t *jwt = NULL;
     cjwt_code_t result;
 
-    CU_ASSERT_FATAL( NULL != b64_h );
-    CU_ASSERT_FATAL( NULL != b64_p );
+    CU_ASSERT_FATAL(NULL != b64_h);
+    CU_ASSERT_FATAL(NULL != b64_p);
 
-    rv = snprintf( buf, sizeof(buf), "%s.%s.", b64_h, b64_p );
-    CU_ASSERT_FATAL( (0 < rv) && (rv < (int) sizeof(buf)) );
+    rv = snprintf(buf, sizeof(buf), "%s.%s.", b64_h, b64_p);
+    CU_ASSERT_FATAL((0 < rv) && (rv < (int) sizeof(buf)));
 
-    result = cjwt_decode( buf, rv, t->options, NULL, 0, t->time, t->skew, &jwt );
+    result = cjwt_decode(buf, rv, t->options, NULL, 0, t->time, t->skew, &jwt);
 
-    if( result != t->expected ) {
-        printf( "\n\x1B[01;31m--- FAILED: %s.%s\nexp: %d, got: %d\x1B[00m\n",
-                t->header, t->payload, t->expected, result );
+    if (result != t->expected) {
+        printf("\n\x1B[01;31m--- FAILED: %s.%s\nexp: %d, got: %d\x1B[00m\n",
+               t->header, t->payload, t->expected, result);
     }
-    CU_ASSERT_FATAL( result == t->expected );
-    if( CJWTE_OK == result ) {
-        CU_ASSERT( t->jwt.header.alg == jwt->header.alg );
-        str_eq( t->jwt.iss, jwt->iss );
-        str_eq( t->jwt.sub, jwt->sub );
-        str_eq( t->jwt.jti, jwt->jti );
+    CU_ASSERT_FATAL(result == t->expected);
+    if (CJWTE_OK == result) {
+        CU_ASSERT(t->jwt.header.alg == jwt->header.alg);
+        str_eq(t->jwt.iss, jwt->iss);
+        str_eq(t->jwt.sub, jwt->sub);
+        str_eq(t->jwt.jti, jwt->jti);
 
-        int64_eq( t->jwt.exp, jwt->exp );
-        int64_eq( t->jwt.nbf, jwt->nbf );
-        int64_eq( t->jwt.iat, jwt->iat );
+        int64_eq(t->jwt.exp, jwt->exp);
+        int64_eq(t->jwt.nbf, jwt->nbf);
+        int64_eq(t->jwt.iat, jwt->iat);
 
-        claims_eq( t->jwt.private_claims, jwt->private_claims );
+        claims_eq(t->jwt.private_claims, jwt->private_claims);
 
-        CU_ASSERT_FATAL( t->jwt.aud.count == jwt->aud.count );
-        if( 0 == t->jwt.aud.count ) {
-            CU_ASSERT_FATAL( NULL == t->jwt.aud.names );
+        CU_ASSERT_FATAL(t->jwt.aud.count == jwt->aud.count);
+        if (0 == t->jwt.aud.count) {
+            CU_ASSERT_FATAL(NULL == t->jwt.aud.names);
         }
-        for( int i = 0; i < t->jwt.aud.count; i++ ) {
-            CU_ASSERT_STRING_EQUAL( t->jwt.aud.names[i], jwt->aud.names[i] );
+        for (int i = 0; i < t->jwt.aud.count; i++) {
+            CU_ASSERT_STRING_EQUAL(t->jwt.aud.names[i], jwt->aud.names[i]);
         }
     }
 
-    if( jwt ) {
-        cjwt_destroy( jwt );
+    if (jwt) {
+        cjwt_destroy(jwt);
     }
-    if( b64_h ) {
-        free( b64_h );
+    if (b64_h) {
+        free(b64_h);
     }
-    if( b64_p ) {
-        free( b64_p );
+    if (b64_p) {
+        free(b64_p);
     }
 }
 
-void test_cjwt (void)
+void test_cjwt(void)
 {
-    //char *header  = "{ \"alg\": \"RS256\" }";
-    //char *payload = "{ \"bob\": 123 }";
-    //char *b64_h = b64url_encode_with_alloc( (uint8_t*) header, strlen(header), NULL );
-    //char *b64_p = b64url_encode_with_alloc( (uint8_t*) payload, strlen(payload), NULL );
-    char *bad_h1 = "eyAiYWxnI|ogIm5vbmUiIH0.eyAiYm9iIjogMTIzIH0.";
-    char *bad_h2 = ".eyAiYm9iIjogMTIzIH0.";
-    char *bad_p1 = "eyAiYWxnIjogIm5vbmUiIH0.eyAiYm9iI|ogMTIzIH0.";
-    char *bad_p2 = "eyAiYWxnIjogIm5vbmUiIH0..";
+    // char *header  = "{ \"alg\": \"RS256\" }";
+    // char *payload = "{ \"bob\": 123 }";
+    // char *b64_h = b64url_encode_with_alloc( (uint8_t*) header, strlen(header), NULL );
+    // char *b64_p = b64url_encode_with_alloc( (uint8_t*) payload, strlen(payload), NULL );
+    char *bad_h1     = "eyAiYWxnI|ogIm5vbmUiIH0.eyAiYm9iIjogMTIzIH0.";
+    char *bad_h2     = ".eyAiYm9iIjogMTIzIH0.";
+    char *bad_p1     = "eyAiYWxnIjogIm5vbmUiIH0.eyAiYm9iI|ogMTIzIH0.";
+    char *bad_p2     = "eyAiYWxnIjogIm5vbmUiIH0..";
     char *bad_3group = "eyAiYWxnIjogIlJTMjU2IiB9.eyAiYm9iIjogMTIzIH0.";
     char *bad_5group = "eyAiYWxnIjogIlJTMjU2IiB9.eyAiYm9iIjogMTIzIH0...";
     cjwt_t *jwt;
     cjwt_code_t result;
 
-    for( size_t i = 0; i < sizeof(test_list)/sizeof(test_case_t); i++ ) {
-        test_case( &test_list[i] );
+    for (size_t i = 0; i < sizeof(test_list) / sizeof(test_case_t); i++) {
+        test_case(&test_list[i]);
     }
-    for( size_t i = 0; i < sizeof(json_test_list)/sizeof(json_test_case_t); i++ ) {
-        json_test_case( &json_test_list[i] );
+    for (size_t i = 0; i < sizeof(json_test_list) / sizeof(json_test_case_t); i++) {
+        json_test_case(&json_test_list[i]);
     }
 
-    //printf( "%s.%s.", b64_h, b64_p );
-    result = cjwt_decode( bad_h1, strlen(bad_h1), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_HEADER_INVALID_BASE64 == result );
+    // printf( "%s.%s.", b64_h, b64_p );
+    result = cjwt_decode(bad_h1, strlen(bad_h1), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt);
+    CU_ASSERT(CJWTE_HEADER_INVALID_BASE64 == result);
 
-    result = cjwt_decode( bad_p1, strlen(bad_p1), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_PAYLOAD_INVALID_BASE64 == result );
+    result = cjwt_decode(bad_p1, strlen(bad_p1), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt);
+    CU_ASSERT(CJWTE_PAYLOAD_INVALID_BASE64 == result);
 
-    result = cjwt_decode( bad_h2, strlen(bad_h2), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_HEADER_MISSING == result );
+    result = cjwt_decode(bad_h2, strlen(bad_h2), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt);
+    CU_ASSERT(CJWTE_HEADER_MISSING == result);
 
-    result = cjwt_decode( bad_p2, strlen(bad_p2), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_PAYLOAD_MISSING == result );
+    result = cjwt_decode(bad_p2, strlen(bad_p2), OPT_ALLOW_ALG_NONE, NULL, 0, 0, 0, &jwt);
+    CU_ASSERT(CJWTE_PAYLOAD_MISSING == result);
 
-    result = cjwt_decode( NULL, strlen(bad_p2), 0, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_INVALID_PARAMETERS == result );
+    result = cjwt_decode(NULL, strlen(bad_p2), 0, NULL, 0, 0, 0, &jwt);
+    CU_ASSERT(CJWTE_INVALID_PARAMETERS == result);
 
-    result = cjwt_decode( bad_p2, 0, 0, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_INVALID_PARAMETERS == result );
+    result = cjwt_decode(bad_p2, 0, 0, NULL, 0, 0, 0, &jwt);
+    CU_ASSERT(CJWTE_INVALID_PARAMETERS == result);
 
-    result = cjwt_decode( bad_p2, strlen(bad_p2), 0, NULL, 0, 0, 0, NULL );
-    CU_ASSERT( CJWTE_INVALID_PARAMETERS == result );
+    result = cjwt_decode(bad_p2, strlen(bad_p2), 0, NULL, 0, 0, 0, NULL);
+    CU_ASSERT(CJWTE_INVALID_PARAMETERS == result);
 
-    result = cjwt_decode( bad_3group, strlen(bad_3group), 0, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_SIGNATURE_MISSING == result );
+    result = cjwt_decode(bad_3group, strlen(bad_3group), 0, NULL, 0, 0, 0, &jwt);
+    CU_ASSERT(CJWTE_SIGNATURE_MISSING == result);
 
-    result = cjwt_decode( bad_5group, strlen(bad_5group), 0, NULL, 0, 0, 0, &jwt );
-    CU_ASSERT( CJWTE_INVALID_SECTIONS == result );
+    result = cjwt_decode(bad_5group, strlen(bad_5group), 0, NULL, 0, 0, 0, &jwt);
+    CU_ASSERT(CJWTE_INVALID_SECTIONS == result);
 }
 
 
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
-    printf ("--------Start of Test Cases Execution ---------\n");
-    *suite = CU_add_suite( "tests", NULL, NULL );
-    CU_add_test( *suite, "Test cjwt", test_cjwt );
+    printf("--------Start of Test Cases Execution ---------\n");
+    *suite = CU_add_suite("tests", NULL, NULL);
+    CU_add_test(*suite, "Test cjwt", test_cjwt);
 }
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf ( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf ( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
-
     }
 
     return rv;
 }
-
-

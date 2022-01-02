@@ -1,4 +1,4 @@
-/* SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC */
+/* SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #ifndef __UTILS_H__
@@ -17,9 +17,8 @@ struct split_jwt {
     struct section sections[5];
 };
 
-int split( const char *full, size_t len, struct split_jwt *split );
+int split(const char *full, size_t len, struct split_jwt *split);
 
-char* cjwt_strdup( const char *s );
+char *cjwt_strdup(const char *s);
 
 #endif
-
