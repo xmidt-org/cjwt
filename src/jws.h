@@ -1,4 +1,4 @@
-/* SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC */
+/* SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #ifndef __JWS_H__
@@ -20,6 +20,6 @@ struct sig_input {
     struct sig_section key;
 };
 
-cjwt_code_t jws_verify_signature( const cjwt_t *jwt, const struct sig_input *in );
+cjwt_code_t jws_verify_signature(const cjwt_t *jwt, const struct sig_input *in);
 
 #endif

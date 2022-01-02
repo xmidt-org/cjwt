@@ -1,10 +1,10 @@
-/* SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC */
+/* SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
+#include <CUnit/Basic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <CUnit/Basic.h>
 
 #include "../src/utils.h"
 
@@ -18,6 +18,7 @@ struct test_vector {
 
 void test_split()
 {
+    // clang-format off
     struct test_vector tests[] = {
         {   .full = "abcdefghijkl",
             .len  = 12,
@@ -140,22 +141,23 @@ void test_split()
             },
         },
     };
+    // clang-format on
 
-    for( size_t i = 0; i < sizeof(tests)/sizeof(struct test_vector); i++ ) {
+    for (size_t i = 0; i < sizeof(tests) / sizeof(struct test_vector); i++) {
         struct split_jwt got;
         int rv;
 
-        rv = split( tests[i].full, tests[i].len, &got );
+        rv = split(tests[i].full, tests[i].len, &got);
 
-        CU_ASSERT( rv == tests[i].rv );
-        if( 0 == tests[i].rv ) {
-            CU_ASSERT_FATAL( got.count == tests[i].goal.count );
+        CU_ASSERT(rv == tests[i].rv);
+        if (0 == tests[i].rv) {
+            CU_ASSERT_FATAL(got.count == tests[i].goal.count);
 
-            for( size_t j = 0; j < got.count; j++ ) {
-                CU_ASSERT( got.sections[j].len == tests[i].goal.sections[j].len );
+            for (size_t j = 0; j < got.count; j++) {
+                CU_ASSERT(got.sections[j].len == tests[i].goal.sections[j].len);
 
-                for( size_t k = 0; k < tests[i].goal.sections[j].len; k++ ) {
-                    CU_ASSERT( got.sections[j].data[k] == tests[i].goal.sections[j].data[k] );
+                for (size_t k = 0; k < tests[i].goal.sections[j].len; k++) {
+                    CU_ASSERT(got.sections[j].data[k] == tests[i].goal.sections[j].data[k]);
                 }
             }
         }
@@ -163,37 +165,37 @@ void test_split()
 }
 
 
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
-    *suite = CU_add_suite( "Utils tests", NULL, NULL );
-    CU_add_test( *suite, "split() Tests", test_split );
+    *suite = CU_add_suite("Utils tests", NULL, NULL);
+    CU_add_test(*suite, "split() Tests", test_split);
 }
 
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
     }
 
-    if( 0 != rv ) {
+    if (0 != rv) {
         return 1;
     }
     return 0;
