@@ -25,4 +25,3 @@ extraction:
             build_command:
                 - cd build
                 - ninja all
-
