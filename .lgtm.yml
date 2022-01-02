@@ -3,9 +3,9 @@
 ---
 path_classifiers:
   library:
-    - exclude: **/subprojects/**
+    - exclude: subprojects
   test:
-    - exclude: **/tests/**
+    - exclude: tests
 
 extraction:
   cpp:
@@ -22,7 +22,9 @@ extraction:
         - meson -C build compile
 
 queries:
+  - exclude: "*"
   - include:
       tags:
         - "security"
         - "correctness"
+      severity: "error"
