@@ -14,14 +14,18 @@ extraction:
     cpp:
         prepare:
             packages:
-                - meson
-                - libcjson
-                - libopenssl
+                - libcjson-dev
+                - libcurl4-openssl-dev
         configure:
             command:
                 - meson build
                 - cd build
         index:
             build_command:
-                - cd build
-                - ninja all
+                - meson -C build compile
+
+queries:
+    - include:
+        tags:
+            - "security"
+            - "correctness"
