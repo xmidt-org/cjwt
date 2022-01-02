@@ -2,30 +2,27 @@
 # SPDX-License-Identifier: Apache-2.0
 ---
 path_classifiers:
-    library:
-    test:
-        - tests
-    exclude:
-        - "**/subprojects/**"
-        - tests/input
-        - tests/new_input
+  library:
+    - exclude: **/subprojects/**
+  test:
+    - exclude: **/tests/**
 
 extraction:
-    cpp:
-        prepare:
-            packages:
-                - libcjson-dev
-                - libcurl4-openssl-dev
-        configure:
-            command:
-                - meson build
-                - cd build
-        index:
-            build_command:
-                - meson -C build compile
+  cpp:
+    prepare:
+      packages:
+        - libcjson-dev
+        - libcurl4-openssl-dev
+    configure:
+      command:
+        - meson build
+        - cd build
+    index:
+      build_command:
+        - meson -C build compile
 
 queries:
-    - include:
-        tags:
-            - "security"
-            - "correctness"
+  - include:
+      tags:
+        - "security"
+        - "correctness"
