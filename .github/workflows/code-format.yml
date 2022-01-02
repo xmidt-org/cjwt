@@ -6,6 +6,16 @@ name: Code Format Check
 on:
   pull_request:
   push:
+    paths-ignore:
+      - 'AUTHORS'
+      - 'LICENSE'
+      - 'NOTICE'
+      - '**.md'
+      - '.gitignore'
+    tags-ignore:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      - main
   schedule:
     - cron: '12 9 * * 3'
 
