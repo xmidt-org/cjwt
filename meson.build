@@ -129,13 +129,15 @@ test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
                   link_args: test_args))
 
 
-  add_test_setup('valgrind',
-                 is_default: true,
-                 exe_wrapper: [ 'valgrind',
-                                '--leak-check=full',
-                                '--show-reachable=yes',
-                                '--error-exitcode=1' ],
-                 timeout_multiplier: 4)
+  if host_machine.system().contains('linux')
+    add_test_setup('valgrind',
+                   is_default: true,
+                   exe_wrapper: [ 'valgrind',
+                                  '--leak-check=full',
+                                  '--show-reachable=yes',
+                                  '--error-exitcode=1' ],
+                   timeout_multiplier: 4)
+  endif
 endif
 
 ################################################################################
