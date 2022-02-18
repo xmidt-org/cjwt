@@ -23,7 +23,8 @@ jobs:
   test:
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
-      packages: libcjson-dev libcurl4-openssl-dev
-      brew-packages: cjson curl openssl
+      # cjson & openssl
+      packages: libcjson-dev libssl-dev
+      brew-packages: cjson openssl@1.1
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
