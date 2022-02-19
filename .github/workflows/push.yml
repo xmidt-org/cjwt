@@ -25,6 +25,6 @@ jobs:
     with:
       # cjson & openssl
       packages: libcjson-dev libssl-dev
-      brew-packages: cjson openssl@1.1
+      brew-packages: cjson openssl@3
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
