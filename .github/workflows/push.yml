@@ -25,6 +25,9 @@ jobs:
     with:
       # cjson & openssl
       packages: libcjson-dev libssl-dev
-      brew-packages: cjson openssl@3
+      brew-packages: cjson openssl@1.1
+      brew-extra: |
+        PKG_CONFIG_PATH="/usr/local/opt/openssl@1.1/lib/pkgconfig"
+
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
