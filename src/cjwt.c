@@ -601,7 +601,7 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     int ret, sz_payload;
     size_t pl_desize;
     size_t out_size = 0;
-    uint8_t *decoded_pl;
+    uint8_t *decoded_pl = NULL;
 
     if( !p_cjwt || !p_payload ) {
         return EINVAL;
@@ -611,13 +611,13 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     pl_desize = b64url_get_decoded_buffer_size( sz_payload );
     cjwt_info( "----------------- payload ------------------- \n" );
     cjwt_info( "Payload Size = %d , Decoded size = %d\n", sz_payload, ( int )pl_desize );
-    decoded_pl = malloc( pl_desize + 1 );
+    decoded_pl = (uint8_t *)malloc( sizeof(uint8_t) * (pl_desize + 2 ));
 
     if( !decoded_pl ) {
         return ENOMEM;
     }
 
-    memset( decoded_pl, 0, ( pl_desize + 1 ) );
+    memset( decoded_pl, 0, ( pl_desize + 2 ) );
     //decode payload
     out_size = b64url_decode( ( uint8_t * )p_payload, sz_payload, decoded_pl );
     cjwt_info( "Bytes = %d\n", ( int )out_size );
@@ -631,7 +631,7 @@ static int cjwt_parse_payload( cjwt_t *p_cjwt, char *p_payload )
     cjwt_info( "Raw data  = %*s\n", ( int )out_size, decoded_pl );
     ret = cjwt_update_payload( p_cjwt, ( char* )decoded_pl );
 end:
-    free( decoded_pl );
+    free((uint8_t *) decoded_pl );
     return ret;
 }
 
