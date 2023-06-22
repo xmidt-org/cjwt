@@ -228,6 +228,8 @@ static cjwt_code_t process_header_json(cjwt_t *cjwt, uint32_t options,
 {
     const cJSON *alg = NULL;
     const cJSON *typ = NULL;
+    const cJSON *jku = NULL;
+    const cJSON *kid = NULL;
 
     alg = cJSON_GetObjectItemCaseSensitive(json, "alg");
     if (!alg) {
@@ -266,8 +268,28 @@ static cjwt_code_t process_header_json(cjwt_t *cjwt, uint32_t options,
         }
     }
 
+    jku = cJSON_GetObjectItemCaseSensitive(json, "jku");
+    if (jku && (0 == (OPT_ALLOW_ANY_TYP & options))) {
+        const char *s = jku->valuestring;
+
+        if (jku->type != cJSON_String) {
+            return CJWTE_HEADER_UNSUPPORTED_TYP;
+        }
+    }
+
+    kid = cJSON_GetObjectItemCaseSensitive(json, "kid");
+    if (kid && (0 == (OPT_ALLOW_ANY_TYP & options))) {
+        const char *s = kid->valuestring;
+
+        if (kid->type != cJSON_String) {
+            return CJWTE_HEADER_UNSUPPORTED_TYP;
+        }
+    }
+
     cJSON_DeleteItemFromObjectCaseSensitive(json, "alg");
     cJSON_DeleteItemFromObjectCaseSensitive(json, "typ");
+    cJSON_DeleteItemFromObjectCaseSensitive(json, "jku");
+    cJSON_DeleteItemFromObjectCaseSensitive(json, "kid");
 
     if (json->next || json->prev || json->child) {
         return CJWTE_HEADER_UNSUPPORTED_UNKNOWN;
