@@ -32,7 +32,7 @@ subdir('include/'+meson.project_name())
 # Define the dependencies
 ################################################################################
 openssl = dependency('openssl', version: '>=1.1.1')
-libcjson_dep = dependency('libcjson', version: '>=1.7.14', fallback: ['cjson'])
+libcjson_dep = dependency('libcjson', version: '>=1.7.14', fallback: ['cjson', 'libcjson_dep'])
 libtrower_base64_dep = dependency('trower-base64', version: '>=1.2.7')
 
 ################################################################################
