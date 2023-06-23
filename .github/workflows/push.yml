@@ -20,7 +20,6 @@ on:
 
 jobs:
   test:
-    runs-on: [ ubuntu-20.04 ]
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
       # cjson & openssl
