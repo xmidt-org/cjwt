@@ -27,6 +27,7 @@ jobs:
       brew-packages: cjson openssl@1.1
       brew-extra: PKG_CONFIG_PATH="/usr/local/opt/openssl@1.1/lib/pkgconfig"
       runner-ubuntu: ubuntu-20.04
+      sonarcloud-skip: true
 
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
