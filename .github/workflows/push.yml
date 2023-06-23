@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-1.1:
+  test-openssl-1_1:
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
       # cjson & openssl
@@ -32,7 +32,7 @@ jobs:
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
 
-  test-3.x:
+  test-openssl-3_x:
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
       # cjson & openssl
