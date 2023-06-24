@@ -80,7 +80,29 @@ endif
 ################################################################################
 
 if not meson.is_subproject()
-test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
+  test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
+  
+  if host_machine.system().contains('linux')
+    v = run_command('valgrind', '--version', check: false)
+    if v.returncode() == 0
+      add_test_setup('valgrind',
+                     is_default: true,
+                     exe_wrapper: [ 'valgrind',
+                                    '--leak-check=full',
+                                    '--show-reachable=yes',
+                                    '--error-exitcode=1' ],
+                     timeout_multiplier: 4)
+
+      # There is a bug in valgrind before 3.20 that it needs dwarf 4
+      if meson.get_compiler('c').get_id() == 'clang'
+        if meson.get_compiler('c').version().version_compare('>=14.0.0')
+          if v.stdout().strip().replace('valgrind-','').version_compare('<3.20.0')
+            test_args += '-gdwarf-4'
+          endif
+        endif
+      endif
+    endif
+  endif
 
   cunit_dep = dependency('cunit')
   common_deps = [cunit_dep, libcjson_dep, libtrower_base64_dep, openssl]
@@ -136,15 +158,6 @@ test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
                   link_args: test_args))
 
 
-  if host_machine.system().contains('linux')
-    add_test_setup('valgrind',
-                   is_default: true,
-                   exe_wrapper: [ 'valgrind',
-                                  '--leak-check=full',
-                                  '--show-reachable=yes',
-                                  '--error-exitcode=1' ],
-                   timeout_multiplier: 4)
-  endif
 endif
 
 ################################################################################
