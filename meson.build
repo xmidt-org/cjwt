@@ -31,7 +31,7 @@ subdir('include/'+meson.project_name())
 ################################################################################
 # Define the dependencies
 ################################################################################
-openssl = dependency('openssl', version: '>=1.1.1')
+openssl = dependency('openssl', version: '>=1.1.1', fallback:['openssl', 'openssl_dep'])
 libcjson_dep = dependency('libcjson', version: '>=1.7.14', fallback: ['cjson', 'libcjson_dep'])
 libtrower_base64_dep = dependency('trower-base64', version: '>=1.2.7')
 
@@ -82,24 +82,17 @@ endif
 if not meson.is_subproject()
   test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
   
-  if host_machine.system().contains('linux')
-    v = run_command('valgrind', '--version', check: false)
-    if v.returncode() == 0
-      add_test_setup('valgrind',
-                     is_default: true,
-                     exe_wrapper: [ 'valgrind',
-                                    '--leak-check=full',
-                                    '--show-reachable=yes',
-                                    '--error-exitcode=1' ],
-                     timeout_multiplier: 4)
-
-      # There is a bug in valgrind before 3.20 that it needs dwarf 4
-      if meson.get_compiler('c').get_id() == 'clang'
-        if meson.get_compiler('c').version().version_compare('>=14.0.0')
-          if v.stdout().strip().replace('valgrind-','').version_compare('<3.20.0')
-            test_args += '-gdwarf-4'
-          endif
-        endif
+  if meson.get_compiler('c').get_id() != 'clang'
+    if host_machine.system().contains('linux')
+      v = run_command('valgrind', '--version', check: false)
+      if v.returncode() == 0
+        add_test_setup('valgrind',
+                       is_default: true,
+                       exe_wrapper: [ 'valgrind',
+                                      '--leak-check=full',
+                                      '--show-reachable=yes',
+                                      '--error-exitcode=1' ],
+                       timeout_multiplier: 4)
       endif
     endif
   endif
