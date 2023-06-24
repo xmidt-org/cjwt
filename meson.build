@@ -43,10 +43,17 @@ inc = include_directories([inc_base])
 
 install_headers([inc_base+'/cjwt.h', ver_h], subdir: meson.project_name())
 
+tls = []
+if openssl.version().startswith('1.1')
+  tls = [ 'src/jws_openssl_1.c' ]
+else
+  tls = [ 'src/jws_openssl_3.c' ]
+endif
+
 sources = ['src/cjwt.c',
-           'src/jws_evp_openssl.c',
            'src/print.c',
-           'src/utils.c']
+           'src/utils.c',
+           tls ]
 
 libcjwt = library(meson.project_name(),
                   sources,
@@ -91,9 +98,9 @@ test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
        executable('test_print',
                   ['tests/test_print.c',
                    'src/cjwt.c',
-                   'src/jws_evp_openssl.c',
                    'src/print.c',
-                   'src/utils.c'],
+                   'src/utils.c',
+                   tls ],
                   include_directories: inc,
                   dependencies: common_deps,
                   link_args: test_args))
@@ -102,8 +109,8 @@ test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
        executable('test_cjwt_new',
                   ['tests/test_cjwt_new.c',
                    'src/cjwt.c',
-                   'src/jws_evp_openssl.c',
-                   'src/utils.c'],
+                   'src/utils.c',
+                   tls ],
                   include_directories: inc,
                   dependencies: common_deps,
                   link_args: test_args))
@@ -112,8 +119,8 @@ test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
        executable('test_cjwt',
                   ['tests/test_cjwt.c',
                    'src/cjwt.c',
-                   'src/jws_evp_openssl.c',
-                   'src/utils.c'],
+                   'src/utils.c',
+                   tls ],
                   include_directories: inc,
                   dependencies: common_deps,
                   link_args: test_args))
@@ -122,8 +129,8 @@ test_args = ['-fprofile-arcs', '-ftest-coverage', '-O0']
        executable('test_map',
                   ['tests/test_map.c',
                    'src/cjwt.c',
-                   'src/jws_evp_openssl.c',
-                   'src/utils.c'],
+                   'src/utils.c',
+                   tls ],
                   include_directories: inc,
                   dependencies: common_deps,
                   link_args: test_args))
