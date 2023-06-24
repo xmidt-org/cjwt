@@ -122,26 +122,18 @@ cjwt_code_t verify_es(const EVP_MD *sha, const struct sig_input *in)
         && (1 == ECDSA_SIG_set0(ecdsa_sig, pr, ps)))
     {
         new_sig_len = i2d_ECDSA_SIG(ecdsa_sig, &new_sig);
-    }
+        if (0 < new_sig_len) {
+            /* We don't own the memory now, don't free it. */
+            pr = NULL;
+            ps = NULL;
 
-    if (md_ctx && ecdsa_sig
-        && (1 == EVP_DigestVerifyInit(md_ctx, &pkey_ctx, sha, NULL, pkey))
-        && (1 == EVP_DigestVerifyUpdate(md_ctx, in->full.data, in->full.len))
-        && (1 == EVP_DigestVerifyFinal(md_ctx, in->sig.data, in->sig.len)))
-    {
-        rv = CJWTE_OK;
-    }
-
-    if (0 < new_sig_len) {
-        pr = NULL; /* We don't own the memory, don't free it. */
-        ps = NULL; /* We don't own the memory, don't free it. */
-    }
-
-    if (pkey_ctx && new_sig && (0 < new_sig_len)
-        && (1 == EVP_PKEY_verify_init(pkey_ctx))
-        && (1 == EVP_PKEY_verify(pkey_ctx, new_sig, new_sig_len, digest, dig_len)))
-    {
-        rv = CJWTE_OK;
+            if ((1 == EVP_DigestVerifyInit(md_ctx, &pkey_ctx, sha, NULL, pkey))
+                && (1 == EVP_DigestVerifyUpdate(md_ctx, in->full.data, in->full.len))
+                && (1 == EVP_DigestVerifyFinal(md_ctx, new_sig, new_sig_len)))
+            {
+                rv = CJWTE_OK;
+            }
+        }
     }
 
 done:
