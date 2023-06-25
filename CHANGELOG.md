@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v2.2.0]
+- Add support for openssl v3 as well as v1 APIs.
+- Add support for private jwt headers and the `kid` standard header.
+- Require meson 0.60.3 or newer.
+
 ## [v2.1.1]
 - Fix a few compiler warnings in the example code.
 
@@ -58,7 +63,9 @@ It is unclear what is exactly in 1.0.0 through 1.0.2.
 ### Added
 - First stable release
 
-[Unreleased]: https://github.com/xmidt-org/cjwt/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/xmidt-org/cjwt/compare/v2.2.0...HEAD
+[v2.2.0]: https://github.com/xmidt-org/cjwt/compare/v2.2.0...v2.1.1
+[v2.1.1]: https://github.com/xmidt-org/cjwt/compare/v2.2.1...v2.1.0
 [v2.1.0]: https://github.com/xmidt-org/cjwt/compare/v2.0.1...v2.1.0
 [v2.0.1]: https://github.com/xmidt-org/cjwt/compare/v2.0.0...v2.0.1
 [v2.0.0]: https://github.com/xmidt-org/cjwt/compare/v1.0.4...v2.0.0
