@@ -115,6 +115,8 @@ json_test_case_t json_test_list[] = {
       .expected = CJWTE_OK,
       .options = OPT_ALLOW_ALG_NONE,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = "example.com",
                 .sub = "1234567890",
                 .jti = "1029301923asdf",
@@ -134,6 +136,8 @@ json_test_case_t json_test_list[] = {
       .expected = CJWTE_OK,
       .options = OPT_ALLOW_ALG_NONE,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -148,11 +152,46 @@ json_test_case_t json_test_list[] = {
                 .private_claims = NULL,
              },
     },
+    { .header   = "{ \"alg\": \"none\", \"typ\": \"jwt\", \"kid\": \"the key id\", \"other\": \"other field\" }",
+      .payload  = "{ \"sub\": \"1234567890\", \"iat\": 1516239022, \"aud\": \"example.com\", \"thing\": \"things\" }",
+      .expected = CJWTE_OK,
+      .options = OPT_ALLOW_ALG_NONE,
+      .jwt = {  .header.alg = alg_none,
+                .header.kid = "the key id",
+                /* This isn't the right format for cJSON, but the test will look at the
+                 * string and stringvalue for matching. */
+                .header.private_headers = (cJSON[1]){{
+                    .next = NULL,
+                    .string = "other",
+                    .valuestring = "other field",
+                }},
+                .iss = NULL,
+                .sub = "1234567890",
+                .jti = NULL,
+
+                .aud.count = 1,
+                .aud.names = (char*[1]){ "example.com" },
+
+                .exp = NULL,
+                .nbf = NULL,
+                .iat = (int64_t[1]){ 1516239022 },
+
+                /* This isn't the right format for cJSON, but the test will look at the
+                 * string and stringvalue for matching. */
+                .private_claims = (cJSON[1]){{
+                    .next = NULL,
+                    .string = "thing",
+                    .valuestring = "things",
+                }},
+             },
+    },
     { .header   = "{ \"alg\": \"none\" }",
       .payload  = "{ \"sub\": \"1234567890\", \"iat\": 1516239022, \"aud\": [ \"example.com\" ] }",
       .expected = CJWTE_OK,
       .options = OPT_ALLOW_ALG_NONE,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -172,6 +211,8 @@ json_test_case_t json_test_list[] = {
       .expected = CJWTE_OK,
       .options = OPT_ALLOW_ALG_NONE,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -197,6 +238,8 @@ json_test_case_t json_test_list[] = {
       .skew = 0,
       .time = 1522334455,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -219,6 +262,8 @@ json_test_case_t json_test_list[] = {
       .skew = 0,
       .time = 1522334450,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -241,6 +286,8 @@ json_test_case_t json_test_list[] = {
       .skew = 1,
       .time = 1522334456,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -263,6 +310,8 @@ json_test_case_t json_test_list[] = {
       .skew = 1,
       .time = 1522334449,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -285,6 +334,8 @@ json_test_case_t json_test_list[] = {
       .skew = 0,
       .time = 1522334449,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -307,6 +358,8 @@ json_test_case_t json_test_list[] = {
       .skew = 0,
       .time = 1522334466,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = "1234567890",
                 .jti = NULL,
@@ -327,6 +380,8 @@ json_test_case_t json_test_list[] = {
       .expected = CJWTE_OK,
       .options = OPT_ALLOW_ALG_NONE | OPT_ALLOW_ANY_TYP,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = NULL,
                 .jti = NULL,
@@ -347,6 +402,8 @@ json_test_case_t json_test_list[] = {
       .expected = CJWTE_OK,
       .options = OPT_ALLOW_ALG_NONE,
       .jwt = {  .header.alg = alg_none,
+                .header.kid = NULL,
+                .header.private_headers = NULL,
                 .iss = NULL,
                 .sub = NULL,
                 .jti = NULL,
@@ -433,8 +490,8 @@ json_test_case_t json_test_list[] = {
       .expected = CJWTE_HEADER_UNSUPPORTED_TYP,
       .options = OPT_ALLOW_ALG_NONE,
     },
-    /* Unexpected header present */
-    { .header   = "{ \"alg\": \"none\", \"dog\": \"woof!\" }",
+    /* Invalid header present */
+    { .header   = "{ \"alg\": \"none\", \"jwk\": \"woof!\" }",
       .payload  = "{  }",
       .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
       .options = OPT_ALLOW_ALG_NONE,
@@ -637,10 +694,24 @@ void int64_eq(int64_t *exp, int64_t *act)
 
 void claims_eq(cJSON *exp, cJSON *act)
 {
+    cJSON *got = NULL;
+    char *text = NULL;
+
+    text = cJSON_Print(act);
+    printf("got: %s\n", text);
+    cJSON_free(text);
+
     if (NULL == exp) {
-        CU_ASSERT(exp == act);
+        CU_ASSERT(NULL == act);
         return;
     }
+
+    got = cJSON_GetObjectItemCaseSensitive(act, exp->string);
+    CU_ASSERT(got != NULL);
+    if (got) {
+        CU_ASSERT(0 == strcmp(exp->valuestring, cJSON_GetStringValue(got)));
+    }
+    return;
 }
 
 void json_test_case(const json_test_case_t *t)
@@ -667,6 +738,10 @@ void json_test_case(const json_test_case_t *t)
     CU_ASSERT_FATAL(result == t->expected);
     if (CJWTE_OK == result) {
         CU_ASSERT(t->jwt.header.alg == jwt->header.alg);
+        str_eq(t->jwt.header.kid, jwt->header.kid);
+        printf("kid: %s\n", jwt->header.kid);
+        claims_eq(t->jwt.header.private_headers, jwt->header.private_headers);
+
         str_eq(t->jwt.iss, jwt->iss);
         str_eq(t->jwt.sub, jwt->sub);
         str_eq(t->jwt.jti, jwt->jti);

@@ -112,6 +112,10 @@ typedef enum {
 typedef struct {
     cjwt_alg_t alg;
 
+    char *kid;
+
+    cJSON *private_headers;
+
     /* Unsupported:
      *  jku
      *  jwk
