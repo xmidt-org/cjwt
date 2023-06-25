@@ -14,3 +14,4 @@ on:
 jobs:
   release:
     uses: xmidt-org/.github/.github/workflows/meson-release.yml@main
+    secrets: inherit
