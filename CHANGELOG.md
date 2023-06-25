@@ -63,7 +63,6 @@ It is unclear what is exactly in 1.0.0 through 1.0.2.
 ### Added
 - First stable release
 
-
 [Unreleased]: https://github.com/xmidt-org/cjwt/compare/v2.2.0...HEAD
 [v2.2.0]: https://github.com/xmidt-org/cjwt/compare/v2.2.0...v2.1.1
 [v2.1.1]: https://github.com/xmidt-org/cjwt/compare/v2.1.1...v2.1.0
