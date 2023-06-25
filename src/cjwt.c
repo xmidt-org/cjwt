@@ -226,6 +226,7 @@ static cjwt_code_t process_payload(cjwt_t *cjwt, const char *payload, size_t len
 static cjwt_code_t process_header_json(cjwt_t *cjwt, uint32_t options,
                                        cJSON *json)
 {
+    cjwt_code_t rv   = CJWTE_OK;
     const cJSON *alg = NULL;
     const cJSON *typ = NULL;
 
@@ -266,11 +267,35 @@ static cjwt_code_t process_header_json(cjwt_t *cjwt, uint32_t options,
         }
     }
 
+    rv = process_string(json, "kid", &cjwt->header.kid);
+    if (CJWTE_OK != rv) {
+        return rv;
+    }
+
+    /* These headers are important for the JWT to be processed.  If not supported
+     * the library should return an error to prevent a false success. */
+    if ((NULL != cJSON_GetObjectItemCaseSensitive(json, "jku"))
+        || (NULL != cJSON_GetObjectItemCaseSensitive(json, "jwk"))
+        || (NULL != cJSON_GetObjectItemCaseSensitive(json, "x5u"))
+        || (NULL != cJSON_GetObjectItemCaseSensitive(json, "x5c"))
+        || (NULL != cJSON_GetObjectItemCaseSensitive(json, "x5t"))
+        || (NULL != cJSON_GetObjectItemCaseSensitive(json, "x5ts256"))
+        || (NULL != cJSON_GetObjectItemCaseSensitive(json, "cty"))
+        || (NULL != cJSON_GetObjectItemCaseSensitive(json, "crit")))
+    {
+        return CJWTE_HEADER_UNSUPPORTED_UNKNOWN;
+    }
+
+    /* Remove everything supported & handled. */
     cJSON_DeleteItemFromObjectCaseSensitive(json, "alg");
     cJSON_DeleteItemFromObjectCaseSensitive(json, "typ");
+    cJSON_DeleteItemFromObjectCaseSensitive(json, "kid");
 
-    if (json->next || json->prev || json->child) {
-        return CJWTE_HEADER_UNSUPPORTED_UNKNOWN;
+    /* Everything left can be considered private headers. */
+    if (cJSON_GetArraySize(json)) {
+        cjwt->header.private_headers = json;
+    } else {
+        cJSON_Delete(json);
     }
 
     return CJWTE_OK;
@@ -299,7 +324,9 @@ static cjwt_code_t process_header(cjwt_t *cjwt, uint32_t options,
 
     rv = process_header_json(cjwt, options, json);
 
-    cJSON_Delete(json);
+    if (CJWTE_OK != rv) {
+        cJSON_Delete(json);
+    }
     free(decoded);
 
     return rv;
@@ -450,29 +477,15 @@ invalid:
 void cjwt_destroy(cjwt_t *jwt)
 {
     if (jwt) {
-        if (jwt->iss) {
-            free(jwt->iss);
-        }
+        if (jwt->header.kid) free(jwt->header.kid);
+        if (jwt->header.private_headers) cJSON_Delete(jwt->header.private_headers);
 
-        if (jwt->sub) {
-            free(jwt->sub);
-        }
-
-        if (jwt->jti) {
-            free(jwt->jti);
-        }
-
-        if (jwt->exp) {
-            free(jwt->exp);
-        }
-
-        if (jwt->nbf) {
-            free(jwt->nbf);
-        }
-
-        if (jwt->iat) {
-            free(jwt->iat);
-        }
+        if (jwt->iss) free(jwt->iss);
+        if (jwt->sub) free(jwt->sub);
+        if (jwt->jti) free(jwt->jti);
+        if (jwt->exp) free(jwt->exp);
+        if (jwt->nbf) free(jwt->nbf);
+        if (jwt->iat) free(jwt->iat);
 
         for (int i = 0; i < jwt->aud.count; i++) {
             if (jwt->aud.names[i]) {
@@ -480,13 +493,8 @@ void cjwt_destroy(cjwt_t *jwt)
             }
         }
 
-        if (jwt->aud.names) {
-            free(jwt->aud.names);
-        }
-
-        if (jwt->private_claims) {
-            cJSON_Delete(jwt->private_claims);
-        }
+        if (jwt->aud.names) free(jwt->aud.names);
+        if (jwt->private_claims) cJSON_Delete(jwt->private_claims);
 
         free(jwt);
     }

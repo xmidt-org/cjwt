@@ -27,6 +27,8 @@
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 extern const char *alg_to_string(cjwt_alg_t alg);
+static const char *str(const char *s);
+static void priv(FILE *stream, cJSON *list);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -45,8 +47,14 @@ void cjwt_print(FILE *stream, cjwt_t *jwt)
             "=====================\n"
             "header\n"
             "---------------------\n"
-            "   alg: %s\n\n",
-            alg_to_string(jwt->header.alg));
+            "   alg: %s\n"
+            "   kid: %s\n"
+            "   private_headers:\n\n",
+            alg_to_string(jwt->header.alg),
+            str(jwt->header.kid));
+
+    priv(stream, jwt->header.private_headers);
+
 
     fprintf(stream,
             "payload\n"
@@ -67,9 +75,9 @@ void cjwt_print(FILE *stream, cjwt_t *jwt)
     } else {
         fprintf(stream, "   nbf: NULL\n\n");
     }
-    fprintf(stream, "   iss: %s\n", (jwt->iss ? jwt->iss : "NULL"));
-    fprintf(stream, "   sub: %s\n", (jwt->sub ? jwt->sub : "NULL"));
-    fprintf(stream, "   jti: %s\n", (jwt->jti ? jwt->jti : "NULL"));
+    fprintf(stream, "   iss: %s\n", str(jwt->iss));
+    fprintf(stream, "   sub: %s\n", str(jwt->sub));
+    fprintf(stream, "   jti: %s\n", str(jwt->jti));
     fprintf(stream, "   aud: ");
     if (0 == jwt->aud.count) {
         fprintf(stream, "NULL\n");
@@ -85,15 +93,7 @@ void cjwt_print(FILE *stream, cjwt_t *jwt)
     fprintf(stream,
             "\nprivate claims\n"
             "---------------------\n");
-    if (jwt->private_claims) {
-        char *text = NULL;
-
-        text = cJSON_Print(jwt->private_claims);
-        fprintf(stream, "%s\n", text);
-        cJSON_free(text);
-    } else {
-        fprintf(stream, "(none)\n");
-    }
+    priv(stream, jwt->private_claims);
     fprintf(stream, "=====================\n");
 }
 
@@ -101,4 +101,25 @@ void cjwt_print(FILE *stream, cjwt_t *jwt)
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-/* none */
+static const char *str(const char *s)
+{
+    if (NULL == s) {
+        return "NULL";
+    }
+
+    return s;
+}
+
+static void priv(FILE *stream, cJSON *list)
+{
+    if (list) {
+        char *text = NULL;
+
+        text = cJSON_Print(list);
+        fprintf(stream, "%s\n", text);
+        cJSON_free(text);
+    } else {
+        fprintf(stream, "(none)\n");
+    }
+    fprintf(stream, "=====================\n");
+}
