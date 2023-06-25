@@ -37,7 +37,8 @@ jobs:
     with:
       # cjson & openssl
       packages: libcjson-dev libssl-dev
-      brew-packages: cjson openssl
+      brew-packages: cjson openssl@3
+      macos-openssl-fix: true
       sonarcloud-skip: true
 
     secrets:

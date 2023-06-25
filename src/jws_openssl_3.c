@@ -14,7 +14,6 @@
 #include "cjwt.h"
 #include "jws.h"
 
-
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -63,55 +62,39 @@ cjwt_code_t verify_hmac(const EVP_MD *sha, const struct sig_input *in)
         rv = CJWTE_OK;
     }
 
-    if (pkey) {
-        EVP_PKEY_free(pkey);
-    }
-    if (md_ctx) {
-        EVP_MD_CTX_free(md_ctx);
-    }
+    EVP_PKEY_free(pkey);
+    EVP_MD_CTX_free(md_ctx);
     return rv;
 }
 
-
-cjwt_code_t verify_es(const EVP_MD *sha, const struct sig_input *in)
+int add_padding(int type, EVP_PKEY_CTX *ctx, int padding)
 {
-    cjwt_code_t rv       = CJWTE_SIGNATURE_VALIDATION_FAILED;
-    EVP_MD_CTX *md_ctx   = NULL;
-    EVP_PKEY_CTX *ctx    = NULL;
-    EVP_PKEY *pkey       = NULL;
-    EC_KEY *ec           = NULL;
-    BIO *keybio          = NULL;
+    if (EVP_PKEY_EC == type) {
+        return 1;
+    }
+
+    return EVP_PKEY_CTX_set_rsa_padding(ctx, padding);
+}
+
+int calc_sig(int type, const struct sig_input *in, uint8_t **sig, int *len)
+{
+    int rv               = 0; /* Match the other openssl symantics for consistency */
     ECDSA_SIG *ecdsa_sig = NULL;
     BIGNUM *pr           = NULL;
     BIGNUM *ps           = NULL;
     int new_sig_len      = 0;
     uint8_t *new_sig     = NULL;
-    uint8_t digest[EVP_MAX_MD_SIZE];
-    unsigned int dig_len = 0;
 
-    if ((0 == in->key.len) || (NULL == in->key.data)) {
-        return CJWTE_SIGNATURE_MISSING_KEY;
+    if (EVP_PKEY_RSA == type) {
+        *sig = (uint8_t *) in->sig.data;
+        *len = in->sig.len;
+        return 1;
     }
 
-    if (INT_MAX < in->sig.len) {
-        return CJWTE_SIGNATURE_KEY_TOO_LARGE;
-    }
-
-    /* Read the ECDSA key in from a PEM encoded blob of memory */
-    keybio = BIO_new_mem_buf(in->key.data, (int) in->key.len);
-    if (!keybio) {
-        return CJWTE_OUT_OF_MEMORY;
-    }
-
-    ec = PEM_read_bio_EC_PUBKEY(keybio, &ec, NULL, NULL);
-    BIO_free(keybio);
-    if (!ec) {
-        return CJWTE_SIGNATURE_INVALID_KEY;
-    }
-
-    pkey      = EVP_PKEY_new();
-    md_ctx    = EVP_MD_CTX_new();
     ecdsa_sig = ECDSA_SIG_new();
+    if (ecdsa_sig == NULL) {
+        return 0;
+    }
 
     /* Read out the r,s numbers from the signature for later.
      * We must convert from this format into DEC because that's
@@ -119,57 +102,39 @@ cjwt_code_t verify_es(const EVP_MD *sha, const struct sig_input *in)
     pr = BN_bin2bn(in->sig.data, (int) in->sig.len / 2, NULL);
     ps = BN_bin2bn(in->sig.data + in->sig.len / 2, (int) in->sig.len / 2, NULL);
 
-    /* Setup the pkey */
-    if (pkey && ec && (1 == EVP_PKEY_assign_EC_KEY(pkey, ec))) {
-        /* pkey owns the ec memory, don't free it. */
-        ec  = NULL;
-        ctx = EVP_PKEY_CTX_new(pkey, NULL);
-    }
-
-    if (md_ctx && pkey && ecdsa_sig && ctx
-        /* Setup the sha digest buffer */
-        && (1 == EVP_DigestInit_ex(md_ctx, sha, NULL))
-        && (1 == EVP_DigestUpdate(md_ctx, in->full.data, in->full.len))
-        && (1 == EVP_DigestFinal_ex(md_ctx, digest, &dig_len))
-        /* Rebuild the signature in DEC format */
-        && (1 == ECDSA_SIG_set0(ecdsa_sig, pr, ps)))
-    {
+    if (1 == ECDSA_SIG_set0(ecdsa_sig, pr, ps)) {
         new_sig_len = i2d_ECDSA_SIG(ecdsa_sig, &new_sig);
+        if (0 <= new_sig_len) {
+            /* We don't own the memory now, don't free it. */
+            pr = NULL;
+            ps = NULL;
+
+            if (0 < new_sig_len) {
+                *sig    = new_sig;
+                *len    = new_sig_len;
+                new_sig = NULL; /* Passed back now, so don't free the buffer. */
+                rv      = 1;
+            }
+        }
     }
 
-    if (0 < new_sig_len) {
-        pr = NULL; /* We don't own the memory, don't free it. */
-        ps = NULL; /* We don't own the memory, don't free it. */
-    }
-
-    if (ctx && new_sig && (0 < new_sig_len)
-        && (1 == EVP_PKEY_verify_init(ctx))
-        && (1 == EVP_PKEY_verify(ctx, new_sig, new_sig_len, digest, dig_len)))
-    {
-        rv = CJWTE_OK;
-    }
-
-    if (new_sig) OPENSSL_free(new_sig);
-    if (ps) BN_free(ps);
-    if (pr) BN_free(pr);
-    if (ecdsa_sig) ECDSA_SIG_free(ecdsa_sig);
-    if (md_ctx) EVP_MD_CTX_free(md_ctx);
-    if (pkey) EVP_PKEY_free(pkey);
-    if (ctx) EVP_PKEY_CTX_free(ctx);
-    if (ec) EC_KEY_free(ec);
+    OPENSSL_free(new_sig);
+    ECDSA_SIG_free(ecdsa_sig);
+    BN_free(ps);
+    BN_free(pr);
 
     return rv;
 }
 
-
-cjwt_code_t verify_rsa(const EVP_MD *sha, const struct sig_input *in, int padding)
+cjwt_code_t verify_most(const EVP_MD *sha, const struct sig_input *in, int type, int padding)
 {
     cjwt_code_t rv         = CJWTE_SIGNATURE_VALIDATION_FAILED;
     EVP_MD_CTX *md_ctx     = NULL;
     EVP_PKEY_CTX *pkey_ctx = NULL;
     EVP_PKEY *pkey         = NULL;
-    RSA *rsa               = NULL;
     BIO *keybio            = NULL;
+    int sig_len            = 0;
+    uint8_t *sig           = NULL;
 
     if ((0 == in->key.len) || (NULL == in->key.data)) {
         return CJWTE_SIGNATURE_MISSING_KEY;
@@ -181,28 +146,36 @@ cjwt_code_t verify_rsa(const EVP_MD *sha, const struct sig_input *in, int paddin
         return CJWTE_OUT_OF_MEMORY;
     }
 
-    rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa, NULL, NULL);
-    BIO_free(keybio);
-    if (!rsa) {
-        return CJWTE_SIGNATURE_INVALID_KEY;
+    pkey = PEM_read_bio_PUBKEY(keybio, NULL, NULL, NULL);
+    if (!pkey) {
+        rv = CJWTE_SIGNATURE_INVALID_KEY;
+        goto done;
     }
 
-    pkey   = EVP_PKEY_new();
+    if (type != EVP_PKEY_id(pkey)) {
+        rv = CJWTE_SIGNATURE_INVALID_KEY;
+        goto done;
+    }
+
     md_ctx = EVP_MD_CTX_create();
 
-    if (md_ctx && pkey
-        && (1 == EVP_PKEY_assign_RSA(pkey, rsa))
-        && (1 == EVP_DigestInit_ex(md_ctx, sha, NULL))
+    if (md_ctx
+        && (1 == calc_sig(type, in, &sig, &sig_len))
         && (1 == EVP_DigestVerifyInit(md_ctx, &pkey_ctx, sha, NULL, pkey))
-        && (0 < EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, padding))
+        && (0 < add_padding(type, pkey_ctx, padding))
         && (1 == EVP_DigestVerifyUpdate(md_ctx, in->full.data, in->full.len))
-        && (1 == EVP_DigestVerifyFinal(md_ctx, in->sig.data, in->sig.len)))
+        && (1 == EVP_DigestVerifyFinal(md_ctx, sig, sig_len)))
     {
         rv = CJWTE_OK;
     }
 
-    if (pkey) EVP_PKEY_free(pkey);
-    if (md_ctx) EVP_MD_CTX_free(md_ctx);
+done:
+
+    if (sig != in->sig.data) OPENSSL_free(sig);
+
+    BIO_free(keybio);
+    EVP_PKEY_free(pkey);
+    EVP_MD_CTX_free(md_ctx);
 
     return rv;
 }
@@ -215,11 +188,11 @@ cjwt_code_t jws_verify_signature(const cjwt_t *jwt, const struct sig_input *in)
 {
     switch (jwt->header.alg) {
         case alg_es256:
-            return verify_es(EVP_sha256(), in);
+            return verify_most(EVP_sha256(), in, EVP_PKEY_EC, 0);
         case alg_es384:
-            return verify_es(EVP_sha384(), in);
+            return verify_most(EVP_sha384(), in, EVP_PKEY_EC, 0);
         case alg_es512:
-            return verify_es(EVP_sha512(), in);
+            return verify_most(EVP_sha512(), in, EVP_PKEY_EC, 0);
 
         case alg_hs256:
             return verify_hmac(EVP_sha256(), in);
@@ -229,18 +202,18 @@ cjwt_code_t jws_verify_signature(const cjwt_t *jwt, const struct sig_input *in)
             return verify_hmac(EVP_sha512(), in);
 
         case alg_ps256:
-            return verify_rsa(EVP_sha256(), in, RSA_PKCS1_PSS_PADDING);
+            return verify_most(EVP_sha256(), in, EVP_PKEY_RSA, RSA_PKCS1_PSS_PADDING);
         case alg_ps384:
-            return verify_rsa(EVP_sha384(), in, RSA_PKCS1_PSS_PADDING);
+            return verify_most(EVP_sha384(), in, EVP_PKEY_RSA, RSA_PKCS1_PSS_PADDING);
         case alg_ps512:
-            return verify_rsa(EVP_sha512(), in, RSA_PKCS1_PSS_PADDING);
+            return verify_most(EVP_sha512(), in, EVP_PKEY_RSA, RSA_PKCS1_PSS_PADDING);
 
         case alg_rs256:
-            return verify_rsa(EVP_sha256(), in, RSA_PKCS1_PADDING);
+            return verify_most(EVP_sha256(), in, EVP_PKEY_RSA, RSA_PKCS1_PADDING);
         case alg_rs384:
-            return verify_rsa(EVP_sha384(), in, RSA_PKCS1_PADDING);
+            return verify_most(EVP_sha384(), in, EVP_PKEY_RSA, RSA_PKCS1_PADDING);
         case alg_rs512:
-            return verify_rsa(EVP_sha512(), in, RSA_PKCS1_PADDING);
+            return verify_most(EVP_sha512(), in, EVP_PKEY_RSA, RSA_PKCS1_PADDING);
 
         default:
             break;
