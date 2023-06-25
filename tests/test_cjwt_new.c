@@ -497,6 +497,55 @@ json_test_case_t json_test_list[] = {
       .options = OPT_ALLOW_ALG_NONE,
     },
 
+    /* jku none not allowed. */
+    { .header   = "{ \"alg\": \"none\", \"jku\": 123 }",
+      .payload  = "{  }",
+      .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
+      .options = OPT_ALLOW_ALG_NONE,
+    },
+    /* jwk none not allowed. */
+    { .header   = "{ \"alg\": \"none\", \"jwk\": 123 }",
+      .payload  = "{  }",
+      .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
+      .options = OPT_ALLOW_ALG_NONE,
+    },
+    /* x5u none not allowed. */
+    { .header   = "{ \"alg\": \"none\", \"x5u\": 123 }",
+      .payload  = "{  }",
+      .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
+      .options = OPT_ALLOW_ALG_NONE,
+    },
+    /* x5c none not allowed. */
+    { .header   = "{ \"alg\": \"none\", \"x5c\": 123 }",
+      .payload  = "{  }",
+      .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
+      .options = OPT_ALLOW_ALG_NONE,
+    },
+    /* x5t none not allowed. */
+    { .header   = "{ \"alg\": \"none\", \"x5t\": 123 }",
+      .payload  = "{  }",
+      .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
+      .options = OPT_ALLOW_ALG_NONE,
+    },
+    /* x5ts256 none not allowed. */
+    { .header   = "{ \"alg\": \"none\", \"x5ts256\": 123 }",
+      .payload  = "{  }",
+      .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
+      .options = OPT_ALLOW_ALG_NONE,
+    },
+    /* cty none not allowed. */
+    { .header   = "{ \"alg\": \"none\", \"cty\": 123 }",
+      .payload  = "{  }",
+      .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
+      .options = OPT_ALLOW_ALG_NONE,
+    },
+    /* crit none not allowed. */
+    { .header   = "{ \"alg\": \"none\", \"crit\": 123 }",
+      .payload  = "{  }",
+      .expected = CJWTE_HEADER_UNSUPPORTED_UNKNOWN,
+      .options = OPT_ALLOW_ALG_NONE,
+    },
+
     /* Invalid iss type */
     { .header   = "{ \"alg\": \"none\" }",
       .payload  = "{ \"iss\": 123 }",
