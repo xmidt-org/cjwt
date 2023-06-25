@@ -9,6 +9,7 @@ on:
       - "CHANGELOG.md" # only try to tag if the CHANGELOG has been updated.
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   release:
