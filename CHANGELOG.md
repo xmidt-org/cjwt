@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v2.3.0]
+- Fix for CVE-2024-54150: https://github.com/xmidt-org/cjwt/commit/096ab3e37f73c914b716e7259589179f363265fd
+- When using HSxxx signing types, the new option `OPT_ALLOW_ONLY_HS_ALG` is required.
+  This ensures that public/private keys can't be mistakenly accepted as symmetric
+  algorithem ciphers.
+
 ## [v2.2.1]
 - Bump the version to trigger a full release.
 

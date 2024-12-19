@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 project('cjwt', 'c',
-        version: '2.2.1',
+        version: '2.3.0',
         license: ['Apache-2.0'],
         meson_version: '>= 0.60.3',
         default_options: ['c_std=c99',
