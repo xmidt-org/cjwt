@@ -16,9 +16,9 @@ struct test_vector {
     struct split_jwt goal;
 };
 
-void test_split();
+void test_split(void);
 
-void test_split()
+void test_split(void)
 {
     // clang-format off
     struct test_vector tests[] = {
