@@ -16,6 +16,8 @@ struct test_vector {
     struct split_jwt goal;
 };
 
+void test_split();
+
 void test_split()
 {
     // clang-format off
@@ -164,6 +166,8 @@ void test_split()
     }
 }
 
+
+void add_suites(CU_pSuite *suite);
 
 void add_suites(CU_pSuite *suite)
 {
