@@ -20,6 +20,7 @@ typedef struct {
     const char *filename;
     const char *key_fn;
     const char *key;
+    uint32_t options;
     cjwt_code_t expected;
 } test_case_t;
 
@@ -37,75 +38,87 @@ typedef struct {
 test_case_t test_list[] = {
     /* Valid, positive tests */
     /*------------------------------------------------------------------------*/
-    { "HS256", "hs256.jwt", NULL,            "hs256-secret", CJWTE_OK },
-    { "HS384", "hs384.jwt", NULL,            "hs384-secret", CJWTE_OK },
-    { "HS512", "hs512.jwt", NULL,            "hs512-secret", CJWTE_OK },
-    { "RS256", "rs256.jwt", "rs.pub",        NULL,           CJWTE_OK },
-    { "RS384", "rs384.jwt", "rs.pub",        NULL,           CJWTE_OK },
-    { "RS512", "rs512.jwt", "rs.pub",        NULL,           CJWTE_OK },
-    { "ES256", "es256.jwt", "es256.jwt.pub", NULL,           CJWTE_OK },
-    { "ES384", "es384.jwt", "es384.jwt.pub", NULL,           CJWTE_OK },
-    { "ES512", "es512.jwt", "es512.jwt.pub", NULL,           CJWTE_OK },
-    { "PS256", "ps256.jwt", "ps.pub",        NULL,           CJWTE_OK },
-    { "PS384", "ps384.jwt", "ps.pub",        NULL,           CJWTE_OK },
-    { "PS512", "ps512.jwt", "ps.pub",        NULL,           CJWTE_OK },
+    { "HS256", "hs256.jwt", NULL,            "hs256-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_OK },
+    { "HS384", "hs384.jwt", NULL,            "hs384-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_OK },
+    { "HS512", "hs512.jwt", NULL,            "hs512-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_OK },
+    { "RS256", "rs256.jwt", "rs.pub",        NULL,           0,                     CJWTE_OK },
+    { "RS384", "rs384.jwt", "rs.pub",        NULL,           0,                     CJWTE_OK },
+    { "RS512", "rs512.jwt", "rs.pub",        NULL,           0,                     CJWTE_OK },
+    { "ES256", "es256.jwt", "es256.jwt.pub", NULL,           0,                     CJWTE_OK },
+    { "ES384", "es384.jwt", "es384.jwt.pub", NULL,           0,                     CJWTE_OK },
+    { "ES512", "es512.jwt", "es512.jwt.pub", NULL,           0,                     CJWTE_OK },
+    { "PS256", "ps256.jwt", "ps.pub",        NULL,           0,                     CJWTE_OK },
+    { "PS384", "ps384.jwt", "ps.pub",        NULL,           0,                     CJWTE_OK },
+    { "PS512", "ps512.jwt", "ps.pub",        NULL,           0,                     CJWTE_OK },
 
     /* Negative tests around signature validation */
     /*------------------------------------------------------------------------*/
-    { "HS256 bad secret",  "hs256.jwt",   NULL,            "hs000-secret", CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "HS384 bad secret",  "hs384.jwt",   NULL,            "hs000-secret", CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "HS512 bad secret",  "hs512.jwt",   NULL,            "hs000-secret", CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "HS256 NULL secret", "hs256.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "HS384 NULL secret", "hs384.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "HS512 NULL secret", "hs512.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "HS256 bad secret",  "hs256.jwt",   NULL,            "hs000-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "HS384 bad secret",  "hs384.jwt",   NULL,            "hs000-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "HS512 bad secret",  "hs512.jwt",   NULL,            "hs000-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "HS256 NULL secret", "hs256.jwt",   NULL,            NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "HS384 NULL secret", "hs384.jwt",   NULL,            NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "HS512 NULL secret", "hs512.jwt",   NULL,            NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "HS256 not allowed", "hs256.jwt",   NULL,            "hs256-secret", 0,                     CJWTE_HEADER_UNSUPPORTED_ALG      },
+    { "HS384 not allowed", "hs384.jwt",   NULL,            "hs384-secret", 0,                     CJWTE_HEADER_UNSUPPORTED_ALG      },
+    { "HS512 not allowed", "hs512.jwt",   NULL,            "hs512-secret", 0,                     CJWTE_HEADER_UNSUPPORTED_ALG      },
 
-    { "RS256 bad secret",  "rs256.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "RS384 bad secret",  "rs384.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "RS512 bad secret",  "rs512.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "RS256 partial",     "rs256.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "RS384 partial",     "rs384.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "RS512 partial",     "rs512.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "RS256 invalid",     "rs256.jwt",   "es256.jwt.pub", NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "RS384 invalid",     "rs384.jwt",   "es256.jwt.pub", NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "RS512 invalid",     "rs512.jwt",   "es256.jwt.pub", NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "RS256 NULL secret", "rs256.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
-    { "RS384 NULL secret", "rs384.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
-    { "RS512 NULL secret", "rs512.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
+    { "RS256 bad secret",  "rs256.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "RS384 bad secret",  "rs384.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "RS512 bad secret",  "rs512.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "RS256 partial",     "rs256.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "RS384 partial",     "rs384.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "RS512 partial",     "rs512.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "RS256 invalid",     "rs256.jwt",   "es256.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "RS384 invalid",     "rs384.jwt",   "es256.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "RS512 invalid",     "rs512.jwt",   "es256.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "RS256 NULL secret", "rs256.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "RS384 NULL secret", "rs384.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "RS512 NULL secret", "rs512.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "RS256 not allowed", "rs256.jwt",   "rs.pub",        NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
+    { "RS384 not allowed", "rs384.jwt",   "rs.pub",        NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
+    { "RS512 not allowed", "rs512.jwt",   "rs.pub",        NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
 
-    { "PS256 bad secret",  "ps256.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "PS384 bad secret",  "ps384.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "PS512 bad secret",  "ps512.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "PS256 partial",     "ps256.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "PS384 partial",     "ps384.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "PS512 partial",     "ps512.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "PS256 invalid",     "ps256.jwt",   "es256.jwt.pub", NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "PS384 invalid",     "ps384.jwt",   "es256.jwt.pub", NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "PS512 invalid",     "ps512.jwt",   "es256.jwt.pub", NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "PS256 NULL secret", "ps256.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
-    { "PS384 NULL secret", "ps384.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
-    { "PS512 NULL secret", "ps512.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
+    { "PS256 bad secret",  "ps256.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "PS384 bad secret",  "ps384.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "PS512 bad secret",  "ps512.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "PS256 partial",     "ps256.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "PS384 partial",     "ps384.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "PS512 partial",     "ps512.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "PS256 invalid",     "ps256.jwt",   "es256.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "PS384 invalid",     "ps384.jwt",   "es256.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "PS512 invalid",     "ps512.jwt",   "es256.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "PS256 NULL secret", "ps256.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "PS384 NULL secret", "ps384.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "PS512 NULL secret", "ps512.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "PS256 not allowed", "ps256.jwt",   "ps.pub",        NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
+    { "PS384 not allowed", "ps384.jwt",   "ps.pub",        NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
+    { "PS512 not allowed", "ps512.jwt",   "ps.pub",        NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
 
-    { "ES256 bad secret",  "es256.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "ES384 bad secret",  "es384.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "ES512 bad secret",  "es512.jwt",   "rs-alt.pub",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "ES256 partial",     "es256.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "ES384 partial",     "es384.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "ES512 partial",     "es512.jwt",   "rs.partial",    NULL,           CJWTE_SIGNATURE_INVALID_KEY       },
-    { "ES256 invalid",     "es256.jwt",   "es512.jwt.pub", NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "ES384 invalid",     "es384.jwt",   "es512.jwt.pub", NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "ES512 invalid",     "es512.jwt",   "es256.jwt.pub", NULL,           CJWTE_SIGNATURE_VALIDATION_FAILED },
-    { "ES256 NULL secret", "es256.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
-    { "ES384 NULL secret", "es384.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
-    { "ES512 NULL secret", "es512.jwt",   NULL,            NULL,           CJWTE_SIGNATURE_MISSING_KEY       },
+    { "ES256 bad secret",  "es256.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "ES384 bad secret",  "es384.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "ES512 bad secret",  "es512.jwt",   "rs-alt.pub",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "ES256 partial",     "es256.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "ES384 partial",     "es384.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "ES512 partial",     "es512.jwt",   "rs.partial",    NULL,           0,                     CJWTE_SIGNATURE_INVALID_KEY       },
+    { "ES256 invalid",     "es256.jwt",   "es512.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "ES384 invalid",     "es384.jwt",   "es512.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "ES512 invalid",     "es512.jwt",   "es256.jwt.pub", NULL,           0,                     CJWTE_SIGNATURE_VALIDATION_FAILED },
+    { "ES256 NULL secret", "es256.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "ES384 NULL secret", "es384.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "ES512 NULL secret", "es512.jwt",   NULL,            NULL,           0,                     CJWTE_SIGNATURE_MISSING_KEY       },
+    { "ES256 not allowed", "es256.jwt",   "es256.jwt.pub", NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
+    { "ES384 not allowed", "es384.jwt",   "es384.jwt.pub", NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
+    { "ES512 not allowed", "es512.jwt",   "es512.jwt.pub", NULL,           OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_UNSUPPORTED_ALG      },
 
     /* These are some nefarious focused tests */
-    { "Try 5 section",     "try_5.inv",   NULL,            "hs256-secret", CJWTE_INVALID_SECTIONS            },
-    { "Try 4 section",     "try_4.inv",   NULL,            "hs256-secret", CJWTE_INVALID_SECTIONS            },
-    { "Try 2 section",     "try_2.inv",   NULL,            "hs256-secret", CJWTE_INVALID_SECTIONS            },
-    { "Try 1 section",     "try_1.inv",   NULL,            "hs256-secret", CJWTE_HEADER_MISSING              },
+    { "Try 5 section",     "try_5.inv",   NULL,            "hs256-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_INVALID_SECTIONS            },
+    { "Try 4 section",     "try_4.inv",   NULL,            "hs256-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_INVALID_SECTIONS            },
+    { "Try 2 section",     "try_2.inv",   NULL,            "hs256-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_INVALID_SECTIONS            },
+    { "Try 1 section",     "try_1.inv",   NULL,            "hs256-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_MISSING              },
 
-    { "Invld b64 header",  "hdr_b64.inv", NULL,            "hs256-secret", CJWTE_HEADER_INVALID_BASE64       },
-    { "Invld b64 sig",     "sig_b64.inv", NULL,            "hs256-secret", CJWTE_SIGNATURE_INVALID_BASE64    },
+    { "Invld b64 header",  "hdr_b64.inv", NULL,            "hs256-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_HEADER_INVALID_BASE64       },
+    { "Invld b64 sig",     "sig_b64.inv", NULL,            "hs256-secret", OPT_ALLOW_ONLY_HS_ALG, CJWTE_SIGNATURE_INVALID_BASE64    },
 };
 
 json_test_case_t json_test_list[] = {
@@ -704,7 +717,7 @@ void test_case(const test_case_t *t)
         while (isspace(jwt_buf[jwt_bytes - 1])) {
             jwt_bytes--;
         }
-        result = cjwt_decode(jwt_buf, jwt_bytes, 0, key, key_len, 0, 0, &jwt);
+        result = cjwt_decode(jwt_buf, jwt_bytes, t->options, key, key_len, 0, 0, &jwt);
     } else {
         result = jwt_bytes;
     }

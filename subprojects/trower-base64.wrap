@@ -8,5 +8,5 @@ source_filename = trower-base64-1.2.7.tar.gz
 source_url = https://github.com/xmidt-org/trower-base64/releases/download/v1.2.7/trower-base64-1.2.7.tar.gz
 source_hash = 9921ea1eca2328c6cadc058df805e6ac58cca06c0737ac21b987ba13b8697ad9
 
-[provides]
+[provide]
 libtrower_base64 = libtrower_base64_dep

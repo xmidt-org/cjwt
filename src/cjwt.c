@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cjson/cJSON.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +23,7 @@
 /*----------------------------------------------------------------------------*/
 struct alg_map {
     cjwt_alg_t alg;
+    bool symmetric;
     const char *text;
 };
 
@@ -29,19 +31,19 @@ struct alg_map {
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
 const struct alg_map the_alg_map[] = {
-    { .alg = alg_none,  .text = "none"},
-    {.alg = alg_es256, .text = "ES256"},
-    {.alg = alg_es384, .text = "ES384"},
-    {.alg = alg_es512, .text = "ES512"},
-    {.alg = alg_hs256, .text = "HS256"},
-    {.alg = alg_hs384, .text = "HS384"},
-    {.alg = alg_hs512, .text = "HS512"},
-    {.alg = alg_ps256, .text = "PS256"},
-    {.alg = alg_ps384, .text = "PS384"},
-    {.alg = alg_ps512, .text = "PS512"},
-    {.alg = alg_rs256, .text = "RS256"},
-    {.alg = alg_rs384, .text = "RS384"},
-    {.alg = alg_rs512, .text = "RS512"}
+    {.alg = alg_none,  .symmetric = false, .text = "none" },
+    {.alg = alg_es256, .symmetric = false, .text = "ES256"},
+    {.alg = alg_es384, .symmetric = false, .text = "ES384"},
+    {.alg = alg_es512, .symmetric = false, .text = "ES512"},
+    {.alg = alg_hs256, .symmetric = true,  .text = "HS256"},
+    {.alg = alg_hs384, .symmetric = true,  .text = "HS384"},
+    {.alg = alg_hs512, .symmetric = true,  .text = "HS512"},
+    {.alg = alg_ps256, .symmetric = false, .text = "PS256"},
+    {.alg = alg_ps384, .symmetric = false, .text = "PS384"},
+    {.alg = alg_ps512, .symmetric = false, .text = "PS512"},
+    {.alg = alg_rs256, .symmetric = false, .text = "RS256"},
+    {.alg = alg_rs384, .symmetric = false, .text = "RS384"},
+    {.alg = alg_rs512, .symmetric = false, .text = "RS512"}
 };
 
 /*----------------------------------------------------------------------------*/
@@ -243,12 +245,21 @@ static cjwt_code_t process_header_json(cjwt_t *cjwt, uint32_t options,
         return CJWTE_HEADER_UNSUPPORTED_ALG;
     }
 
-    if ((alg_none == cjwt->header.alg)
-        && (0 == (OPT_ALLOW_ALG_NONE & options)))
-    {
-        return CJWTE_HEADER_UNSUPPORTED_ALG;
+    if (alg_none == cjwt->header.alg) {
+        if (0 == (OPT_ALLOW_ALG_NONE & options)) {
+            return CJWTE_HEADER_UNSUPPORTED_ALG;
+        }
     }
 
+    if (true == the_alg_map[cjwt->header.alg].symmetric) {
+        if (!(OPT_ALLOW_ONLY_HS_ALG & options)) {
+            return CJWTE_HEADER_UNSUPPORTED_ALG;
+        }
+    } else {
+        if (OPT_ALLOW_ONLY_HS_ALG & options) {
+            return CJWTE_HEADER_UNSUPPORTED_ALG;
+        }
+    }
 
     typ = cJSON_GetObjectItemCaseSensitive(json, "typ");
     if (typ && (0 == (OPT_ALLOW_ANY_TYP & options))) {

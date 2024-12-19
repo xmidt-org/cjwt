@@ -38,6 +38,15 @@
  */
 #define OPT_ALLOW_ANY_TYP (1 << 2)
 
+/* If you specify OPT_ALLOW_ONLY_HS_ALG as part of the options bitmask you
+ * are allowing only the use of HMAC-SHA algorithms (HS256, HS384, HS512).
+ * Otherwise only public key algorithms are allowed.
+ *
+ * Symmetric algorithms and the unknown key type passed in pose a security
+ * risk since an attacker can treate the provided public key as the secret
+ * key and sign their own JWTs with the public key as a symmetric key.
+ */
+#define OPT_ALLOW_ONLY_HS_ALG (1 << 3)
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
@@ -167,12 +176,22 @@ typedef struct {
  *        are accepted unless OPT_ALLOW_ANY_TIME is specified as an option.
  *
  *  @note The key for HS signed JWTs is the plain text secret.
+ * 
+ *  @note To accept HS signed JWTs, OPT_ALLOW_ONLY_HS_ALG must be specified as
+ *        an option.  This option disables the use of public key algorithms.
+ *        This is done to prevent an attacker from using a public key as a
+ *        symmetric key and signing their own JWTs.
  *
  *  @note The key for PS, RS and EC signed JWTs expect the text from the PEM
  *        file including the -----BEGIN PUBLIC KEY----- and
  *        -----END PUBLIC KEY----- lines.
  *
  *  @note The 'time' parameter is seconds since Jan 1, 1970.
+ * 
+ *  @note It is strongly encouraged to validate the 'alg' header to ensure
+ *        that the JWT is signed with the expected algorithm.  This can be
+ *        done by checking the 'alg' header against a known value in the cjwt_t
+ *        object passed out via the jwt parameter.
  *
  *  @param text     [IN]  the original JWT text
  *  @param text_len [IN]  length of the original text

@@ -82,7 +82,11 @@ int main( int argc, char *argv[] )
 
     const char *hs_key = "hs256-secret";
 
-    rv = cjwt_decode( hs_text, strlen(hs_text), 0, (uint8_t*) hs_key, strlen(hs_key), 0, 0, &jwt );
+    rv = cjwt_decode( hs_text,
+                      strlen(hs_text),
+                      OPT_ALLOW_ONLY_HS_ALG,
+                      (uint8_t*) hs_key,
+                      strlen(hs_key), 0, 0, &jwt );
     if( CJWTE_OK != rv ) {
         printf( "There was an error processing the text: %d\n", rv );
         return -1;
