@@ -31,6 +31,7 @@ jobs:
 
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
 
   test-openssl-3_x:
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
@@ -43,3 +44,4 @@ jobs:
 
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
